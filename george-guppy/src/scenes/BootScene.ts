@@ -87,30 +87,65 @@ export class BootScene extends Phaser.Scene {
   private createGeorgeTexture(): void {
     const g = this.make.graphics({ x: 0, y: 0, add: false });
 
+    // George is an orange guppy with a cobalt tail and dorsal fin, both spotted
+    // emerald — that colouring is how the books draw him, so it is not optional.
+    // Fins go down first and the orange body covers their roots.
+    const cobalt = 0x2a52be;
+    const emerald = 0x2ecc71;
+
+    // Forked cobalt tail. He swims to the right, so it trails off to the left.
+    g.fillStyle(cobalt);
+    g.beginPath();
+    g.moveTo(20, 20);
+    g.lineTo(3, 2);
+    g.lineTo(7, 20);
+    g.lineTo(3, 38);
+    g.closePath();
+    g.fillPath();
+
+    // Cobalt dorsal fin.
+    g.beginPath();
+    g.moveTo(30, 9);
+    g.lineTo(20, 1);
+    g.lineTo(38, 8);
+    g.closePath();
+    g.fillPath();
+
+    // Emerald spots: upper tail lobe, lower tail lobe, then the dorsal fin.
+    g.fillStyle(emerald);
+    g.fillCircle(10, 14, 1.6);
+    g.fillCircle(12, 17, 1.3);
+    g.fillCircle(7, 11, 1.3);
+    g.fillCircle(10, 26, 1.6);
+    g.fillCircle(12, 23, 1.3);
+    g.fillCircle(7, 29, 1.3);
+    g.fillCircle(29, 6, 1.3);
+    g.fillCircle(33, 7, 1);
+
     g.fillStyle(0xff8c42);
     g.fillEllipse(34, 20, 38, 26);
 
     g.fillStyle(0xffa94d);
-    g.fillEllipse(26, 36, 16, 7);
-    g.fillEllipse(26, 4, 16, 7);
-
-    g.fillStyle(0xff8c42);
-    g.beginPath();
-    g.moveTo(18, 20);
-    g.lineTo(4, 8);
-    g.lineTo(4, 32);
-    g.closePath();
-    g.fillPath();
+    g.fillEllipse(30, 33, 14, 6);
+    g.fillEllipse(38, 26, 10, 6);
 
     g.fillStyle(0xffffff);
     g.fillCircle(44, 16, 8);
     g.fillStyle(0x222222);
     g.fillCircle(46, 16, 3.5);
 
+    // The scowl — heavy brow and a downturned mouth. George is cranky before
+    // anything has actually happened to him.
     g.lineStyle(3, 0x5a2d0c);
     g.beginPath();
-    g.moveTo(38, 8);
-    g.lineTo(52, 14);
+    g.moveTo(37, 9);
+    g.lineTo(50, 13);
+    g.strokePath();
+
+    g.lineStyle(2, 0x5a2d0c);
+    g.beginPath();
+    g.moveTo(50, 27);
+    g.lineTo(44, 25);
     g.strokePath();
 
     g.generateTexture('george', 64, 40);

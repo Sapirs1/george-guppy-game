@@ -24,6 +24,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Without this the deploy shipped site/game/src as a checked-in build
+      # artifact, so fixes made in george-guppy/src/ silently never reached
+      # production while fixes made directly to site/game/src/ were wiped by
+      # the next local build. That divergence let a black-screen crash sit in
+      # the source unnoticed. There is now one source of truth: george-guppy/src.
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '26'
+
+      - name: Build the game from source
+        run: node tools/build-site-game.mjs
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 

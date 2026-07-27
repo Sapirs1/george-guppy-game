@@ -1,12 +1,14 @@
 import Phaser from 'phaser';
+import { SoundManager } from '../utils/SoundManager.js';
 
 /**
  * SettingsOverlay
  *
  * A small settings modal inspired by Om Nom Run's SettingsPopup.
- * Currently offers toggles for music and SFX placeholders, plus a
- * Return to Menu / Close option. The actual mute state is stored on
- * a simple module-level flag so gameplay scenes can read it later.
+ * Offers toggles for music and SFX, plus a Return to Menu / Close option.
+ * The mute state is stored on simple module-level flags that SoundManager
+ * reads before playing anything; the music toggle also starts/stops the
+ * shared ambience straight away so the change is audible immediately.
  */
 
 export let musicEnabled = true;
@@ -18,6 +20,7 @@ interface SettingsOverlayData {
 
 export class SettingsOverlay extends Phaser.Scene {
   private returnScene = 'Menu';
+  private soundManager!: SoundManager;
   private cardGraphics!: Phaser.GameObjects.Graphics;
   private overlayGraphics!: Phaser.GameObjects.Graphics;
   private toggles: { label: Phaser.GameObjects.Text; state: boolean; onChange: (v: boolean) => void }[] = [];
@@ -33,13 +36,18 @@ export class SettingsOverlay extends Phaser.Scene {
   create(): void {
     const { width, height } = this.scale;
 
+    this.soundManager = new SoundManager(this);
+
     this.overlayGraphics = this.add.graphics();
     this.overlayGraphics.fillStyle(0x000000, 0.55);
     this.overlayGraphics.fillRect(0, 0, width, height);
     this.overlayGraphics.setScrollFactor(0).setDepth(2000);
 
+    // The card is taller than it used to be because each row now carries a tap
+    // target that clears the 44 CSS px minimum once the fixed 800x600 canvas is
+    // scaled down to a phone (~0.49x). These are parent-facing controls.
     const cardWidth = Math.min(360, width * 0.82);
-    const cardHeight = 300;
+    const cardHeight = 376;
     const cardX = (width - cardWidth) / 2;
     const cardY = (height - cardHeight) / 2;
 
@@ -61,17 +69,27 @@ export class SettingsOverlay extends Phaser.Scene {
 
     this.addToggle(
       width / 2,
-      cardY + 96,
+      cardY + 114,
+      cardWidth - 24,
       'Music',
       musicEnabled,
       (v) => {
         musicEnabled = v;
+        // Apply it now rather than on the next scene: the ambience is a game-wide
+        // singleton, so it can be stopped and restarted from right here.
+        this.soundManager.unlock();
+        if (v) {
+          this.soundManager.startAmbience();
+        } else {
+          this.soundManager.stopAmbience();
+        }
       }
     );
 
     this.addToggle(
       width / 2,
-      cardY + 158,
+      cardY + 210,
+      cardWidth - 24,
       'Sound Effects',
       sfxEnabled,
       (v) => {
@@ -81,7 +99,7 @@ export class SettingsOverlay extends Phaser.Scene {
 
     this.addButton(
       width / 2,
-      cardY + 232,
+      cardY + 306,
       this.returnScene === 'GameScene' ? 'Resume' : 'Menu',
       0x3498db,
       () => {
@@ -98,23 +116,28 @@ export class SettingsOverlay extends Phaser.Scene {
   private addToggle(
     centerX: number,
     y: number,
+    rowWidth: number,
     label: string,
     initial: boolean,
     onChange: (value: boolean) => void
   ): void {
+    // Laid out as a row inside the card: label hard left, switch hard right.
+    // The old fixed offsets pushed "Sound Effects" off the left card edge.
+    const rowLeft = centerX - rowWidth / 2;
+
     const labelText = this.add
-      .text(centerX - 70, y, label, {
-        fontSize: '20px',
+      .text(rowLeft + 16, y, label, {
+        fontSize: '28px',
         color: '#d0efff',
         fontStyle: 'bold',
       })
-      .setOrigin(1, 0.5)
+      .setOrigin(0, 0.5)
       .setScrollFactor(0)
       .setDepth(2002);
 
     const trackWidth = 64;
     const trackHeight = 30;
-    const trackX = centerX + 20;
+    const trackX = rowLeft + rowWidth - 16 - trackWidth;
     const track = this.add.graphics();
     track.setScrollFactor(0).setDepth(2002);
 
@@ -134,8 +157,11 @@ export class SettingsOverlay extends Phaser.Scene {
 
     draw();
 
+    // The drawn switch stays small so the card still reads as a settings list,
+    // but the tap target covers the whole row. 92 design px is ~44.9 CSS px on
+    // a 390px-wide phone; the rows are 96px apart so the zones never overlap.
     const hit = this.add
-      .zone(trackX + trackWidth / 2, y, trackWidth + 20, trackHeight + 20)
+      .zone(centerX, y, rowWidth, 92)
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true })
       .setScrollFactor(0)
@@ -158,7 +184,10 @@ export class SettingsOverlay extends Phaser.Scene {
     onClick: () => void
   ): void {
     const w = 200;
-    const h = 50;
+    const h = 64;
+    // Same trick as the toggles: the drawn button stays proportionate to the
+    // card while the hit zone clears 44 CSS px on a phone.
+    const hitHeight = 92;
 
     const bg = this.add.graphics();
     bg.fillStyle(color);
@@ -169,7 +198,7 @@ export class SettingsOverlay extends Phaser.Scene {
 
     const text = this.add
       .text(centerX, y, label, {
-        fontSize: '24px',
+        fontSize: '28px',
         color: '#ffffff',
         fontStyle: 'bold',
       })
@@ -178,7 +207,7 @@ export class SettingsOverlay extends Phaser.Scene {
       .setDepth(2003);
 
     const zone = this.add
-      .zone(centerX, y, w, h)
+      .zone(centerX, y, w, hitHeight)
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true })
       .setScrollFactor(0)

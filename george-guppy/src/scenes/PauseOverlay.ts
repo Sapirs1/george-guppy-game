@@ -44,9 +44,11 @@ export class PauseOverlay extends Phaser.Scene {
     this.overlay.setScrollFactor(0);
     this.overlay.setDepth(1000);
 
-    // Centered card dimensions.
+    // Centered card dimensions. The card is taller than it used to be because
+    // the four buttons now carry tap targets that clear the 44 CSS px minimum
+    // once the fixed 800x600 canvas is scaled down to a phone (~0.49x).
     const cardWidth = Math.min(360, width * 0.8);
-    const cardHeight = 380;
+    const cardHeight = 492;
     const cardX = (width - cardWidth) / 2;
     const cardY = (height - cardHeight) / 2;
 
@@ -56,7 +58,7 @@ export class PauseOverlay extends Phaser.Scene {
     this.card.setDepth(1001);
 
     const title = this.add
-      .text(width / 2, cardY + 40, 'Paused', {
+      .text(width / 2, cardY + 44, 'Paused', {
         fontSize: '40px',
         color: '#ffffff',
         fontStyle: 'bold',
@@ -69,8 +71,12 @@ export class PauseOverlay extends Phaser.Scene {
 
     const centerX = width / 2;
     const buttonWidth = 220;
-    const buttonHeight = 56;
-    const buttonRadius = 16;
+    const buttonHeight = 76;
+    const buttonRadius = 18;
+    // The hit zone is taller than the drawn button: 94 design px is ~45.8 CSS
+    // px on a 390px-wide phone, over the 44px Apple HIG minimum. The 96px gap
+    // below keeps neighbouring zones 2px apart so they can never overlap.
+    const buttonHitHeight = 94;
 
     const makeButton = (label: string, y: number, color: number, onClick: () => void) => {
       const bg = this.add.graphics();
@@ -82,7 +88,7 @@ export class PauseOverlay extends Phaser.Scene {
 
       const text = this.add
         .text(centerX, y + buttonHeight / 2, label, {
-          fontSize: '26px',
+          fontSize: '30px',
           color: '#ffffff',
           fontStyle: 'bold',
         })
@@ -91,7 +97,7 @@ export class PauseOverlay extends Phaser.Scene {
         .setDepth(1003);
 
       const zone = this.add
-        .zone(centerX, y + buttonHeight / 2, buttonWidth, buttonHeight)
+        .zone(centerX, y + buttonHeight / 2, buttonWidth, buttonHitHeight)
         .setOrigin(0.5)
         .setInteractive({ useHandCursor: true })
         .setScrollFactor(0)
@@ -112,8 +118,8 @@ export class PauseOverlay extends Phaser.Scene {
       this.buttons.push(text);
     };
 
-    const baseY = cardY + 100;
-    const gap = 72;
+    const baseY = cardY + 96;
+    const gap = 96;
 
     makeButton('Resume', baseY, 0x2ecc71, () => {
       this.scene.stop();

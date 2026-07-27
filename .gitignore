@@ -8,6 +8,12 @@ omnom-*.json
 omnom-console.log
 test.ts
 
+# Build output. site/game/src used to be committed, which created a SECOND
+# source of truth: fixes made in george-guppy/src/ never shipped, and fixes
+# made directly to site/game/src/ were wiped by the next build. CI builds it
+# now, so george-guppy/src/ is the only place to edit the game.
+site/game/src/
+
 # OS files
 .DS_Store
 Thumbs.db

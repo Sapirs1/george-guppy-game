@@ -9,8 +9,14 @@ import { SettingsOverlay } from './scenes/SettingsOverlay';
 export const gameConfig: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
   parent: 'game-container',
-  width: window.innerWidth,
-  height: window.innerHeight,
+  // Fixed design resolution. Every level is authored at 800x600 and each scene
+  // lays its UI out once in create() against this.scale.width/height, so the
+  // game size must stay constant — Phaser.Scale.FIT then scales the canvas to
+  // fill whatever container it is embedded in, letterboxing as needed.
+  // (Sizing the game to window.innerWidth instead left the 800x600 world
+  // stranded in the top-left corner of a much larger canvas.)
+  width: 800,
+  height: 600,
   backgroundColor: '#0b1d2e',
   pixelArt: false,
   physics: {
@@ -21,7 +27,7 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
     },
   },
   scale: {
-    mode: Phaser.Scale.SHOW_ALL,
+    mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
   audio: {

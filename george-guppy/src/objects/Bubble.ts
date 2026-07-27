@@ -37,9 +37,9 @@ export class Bubble extends Phaser.Physics.Arcade.Image {
     }
   }
 
-  preUpdate(time: number, delta: number): void {
-    super.preUpdate(time, delta);
-
+  preUpdate(_time: number, _delta: number): void {
+    // NOTE: Phaser.Physics.Arcade.Image has NO preUpdate on its prototype
+    // (only Sprite does), so calling super.preUpdate() here throws every frame.
     if (this.label) {
       this.label.setPosition(this.x, this.y - this.displayHeight / 2 - 4);
     }

@@ -45,9 +45,14 @@ export class GameScene extends Phaser.Scene {
   private bubblesCollected = 0;
   private soundManager!: SoundManager;
 
-  private readonly uiBackdropWidth = 220;
-  private readonly uiBackdropHeight = 60;
-  private readonly pauseButtonSize = 46;
+  // Sized for legibility once Scale.FIT halves everything on a phone: the HUD
+  // text was 16px design == ~7 CSS px on a 390px screen, which no child can read.
+  private readonly uiBackdropWidth = 300;
+  private readonly uiBackdropHeight = 86;
+  private readonly pauseButtonSize = 56;
+  /** Extra clearance, beyond touching, before an NPC can start talking again. */
+  private readonly npcReArmMargin = 24;
+  private readonly victoryFlashDuration = 300;
 
   constructor() {
     super({ key: 'GameScene' });
@@ -87,6 +92,10 @@ export class GameScene extends Phaser.Scene {
     this.buildUi(level);
     this.bindInput();
     this.bindDialogueEvents();
+
+    // Phaser never calls a Scene subclass's shutdown() on its own, so the cleanup
+    // below has to be wired to the scene's SHUTDOWN event explicitly.
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.shutdown, this);
   }
 
   shutdown(): void {
@@ -229,12 +238,14 @@ export class GameScene extends Phaser.Scene {
     // Bubble icon on the HUD panel.
     const bubbleIcon = this.add.graphics();
     bubbleIcon.fillStyle(0x62c4f5, 1);
-    bubbleIcon.fillCircle(36, 40, 14);
+    bubbleIcon.fillCircle(38, 52, 16);
     bubbleIcon.setScrollFactor(0).setDepth(101);
 
     this.uiText = this.add
-      .text(56, 22, this.formatUiText(levelName, this.totalBubbles), {
-        fontSize: '16px',
+      // Starts at 0 collected — passing totalBubbles here made a fresh level
+      // open on a full "Bubbles: 3 / 3" counter until the first bubble popped.
+      .text(66, 24, this.formatUiText(levelName, this.bubblesCollected), {
+        fontSize: '24px',
         color: '#d0efff',
         lineSpacing: 4,
         fontStyle: 'bold',
@@ -245,8 +256,16 @@ export class GameScene extends Phaser.Scene {
     this.pauseButtonBg = this.add.graphics();
     this.drawPauseButton();
 
+    // Hit area is deliberately larger than the drawn button — at the ~0.49
+    // scale a phone gets, a 56px button is only ~27 CSS px, well under the
+    // 44px minimum for a small finger.
     this.pauseButtonZone = this.add
-      .zone(this.pauseButtonSize / 2 + 12, this.pauseButtonSize / 2 + 12, this.pauseButtonSize, this.pauseButtonSize)
+      .zone(
+        this.scale.width - this.pauseButtonSize / 2 - 12,
+        this.pauseButtonSize / 2 + 12,
+        this.pauseButtonSize + 32,
+        this.pauseButtonSize + 32
+      )
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true })
       .setScrollFactor(0)
@@ -268,9 +287,12 @@ export class GameScene extends Phaser.Scene {
   }
 
   private drawPauseButton(): void {
-    const x = 12;
-    const y = 12;
+    // Top-RIGHT. It used to sit at (12,12), directly underneath the HUD panel
+    // and its bubble icon, which are drawn at a higher depth — so the pause
+    // control was completely invisible even though it still responded to taps.
     const size = this.pauseButtonSize;
+    const x = this.scale.width - size - 12;
+    const y = 12;
     this.pauseButtonBg.clear();
     this.pauseButtonBg.fillStyle(0x1a3a52, 0.9);
     this.pauseButtonBg.fillRoundedRect(x, y, size, size, 10);
@@ -278,8 +300,8 @@ export class GameScene extends Phaser.Scene {
     this.pauseButtonBg.strokeRoundedRect(x, y, size, size, 10);
     // Draw two pause bars.
     this.pauseButtonBg.fillStyle(0xffffff, 1);
-    this.pauseButtonBg.fillRoundedRect(x + 13, y + 12, 6, 22, 2);
-    this.pauseButtonBg.fillRoundedRect(x + 27, y + 12, 6, 22, 2);
+    this.pauseButtonBg.fillRoundedRect(x + 17, y + 15, 7, 26, 2);
+    this.pauseButtonBg.fillRoundedRect(x + 32, y + 15, 7, 26, 2);
     this.pauseButtonBg.setScrollFactor(0).setDepth(100);
   }
 
@@ -296,8 +318,17 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
-    // Ignore clicks on the HUD panel or pause button in screen (camera) space.
+    // Ignore clicks on the HUD panel (top-left) in screen (camera) space.
     if (pointer.x <= this.uiBackdropWidth + 16 && pointer.y <= this.uiBackdropHeight + 16) {
+      return;
+    }
+
+    // ...and on the pause button (top-right), so tapping it doesn't also send
+    // George swimming off into the corner.
+    if (
+      pointer.x >= this.scale.width - this.pauseButtonSize - 28 &&
+      pointer.y <= this.pauseButtonSize + 28
+    ) {
       return;
     }
 
@@ -313,13 +344,56 @@ export class GameScene extends Phaser.Scene {
     }
 
     const npc = npcGo as NPC;
+
+    // Overlap fires every physics step while the bodies intersect. Without this
+    // latch, closing the dialogue resumed the scene, the very next step saw the
+    // same overlap and reopened it — and because the scene is paused while the
+    // box is up, the player could never steer away. Parking George exactly on
+    // an NPC (tap it, distance < 6, velocity 0) soft-locked the game for good.
+    if (npc.getData('talked')) {
+      return;
+    }
+    npc.setData('talked', true);
+
     this.launchDialogue(npc.dialogKey);
+  }
+
+  /** Re-arm each NPC once the player has actually swum clear of it. */
+  update(): void {
+    if (this.overlayActive || this.levelCompleteTriggered || !this.npcs || !this.player) {
+      return;
+    }
+
+    for (const child of this.npcs.getChildren()) {
+      const npc = child as NPC;
+      if (!npc.getData('talked')) {
+        continue;
+      }
+
+      // Re-arming the moment the bodies stop intersecting is too tight: George
+      // ends a conversation parked against the NPC, so the first tap away
+      // clipped its edge again and replayed the whole conversation before he
+      // could escape. Require real separation instead.
+      const clearDistance =
+        (this.player.displayWidth + npc.displayWidth) / 2 + this.npcReArmMargin;
+
+      if (
+        Phaser.Math.Distance.Between(this.player.x, this.player.y, npc.x, npc.y) >
+        clearDistance
+      ) {
+        npc.setData('talked', false);
+      }
+    }
   }
 
   private handleNpcInteract(event: NpcInteractEvent): void {
     if (this.overlayActive || this.levelCompleteTriggered) {
       return;
     }
+
+    // Tapping an NPC also arms the latch, so walking away afterwards doesn't
+    // immediately retrigger the same conversation via the overlap callback.
+    event.npc?.setData('talked', true);
 
     this.launchDialogue(event.dialogKey);
   }
@@ -362,6 +436,11 @@ export class GameScene extends Phaser.Scene {
     this.hazardCooldown = true;
     this.time.delayedCall(600, () => {
       this.hazardCooldown = false;
+      // Drop the blue "cranky" tint with the cooldown, otherwise George stays
+      // blue for the rest of the level after a single hazard bump.
+      if (this.player?.active) {
+        this.player.setCranky(false);
+      }
     });
 
     const hazard = hazardGo as Phaser.Physics.Arcade.Sprite;
@@ -415,7 +494,14 @@ export class GameScene extends Phaser.Scene {
     if (isLastLevel) {
       this.spawnVictoryFlourish();
       this.victoryPending = true;
-      this.launchDialogue('victory_epilogue');
+
+      // Let the victory flash finish before the epilogue pauses the scene. Pausing
+      // mid-flash freezes the effect at full alpha and buries the final level under
+      // a permanent cream wash; resetFX() clears any remainder either way.
+      this.time.delayedCall(this.victoryFlashDuration + 60, () => {
+        this.cameras.main.resetFX();
+        this.launchDialogue('victory_epilogue');
+      });
       return;
     }
 
@@ -451,7 +537,15 @@ export class GameScene extends Phaser.Scene {
 
     // Avoid resuming if we've already moved to another scene.
     if (this.victoryPending) {
-      this.scene.start('Menu');
+      // Finishing the whole book earns the celebration card (and the "read the
+      // real thing" prompt) rather than a silent bounce back to the menu. The
+      // scene stays paused underneath; the overlay stops it on dismiss.
+      this.missionPanel?.complete();
+      this.scene.launch('LevelCompleteOverlay', {
+        levelIndex: this.levelIndex,
+        bubblesCollected: this.bubblesCollected,
+        totalBubbles: this.totalBubbles,
+      });
     } else {
       this.scene.resume();
     }
@@ -496,7 +590,7 @@ export class GameScene extends Phaser.Scene {
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
 
-    this.cameras.main.flash(300, 255, 250, 220);
+    this.cameras.main.flash(this.victoryFlashDuration, 255, 250, 220);
 
     const emitter = this.add.particles(0, 0, 'bubble', {
       x: { min: 0, max: width },

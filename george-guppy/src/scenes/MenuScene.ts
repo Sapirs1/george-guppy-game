@@ -23,41 +23,67 @@ export class MenuScene extends Phaser.Scene {
 
     // Title card with a subtle dark backing so it pops against the bubbles.
     const titleY = height / 2 - 130;
-    const titleCardWidth = isMobile ? Math.max(260, width - 32) : 520;
-    const titleCardHeight = isMobile ? 90 : 100;
-    const titleFontSize = isMobile ? '34px' : '46px';
-    const subtitleFontSize = isMobile ? '16px' : '20px';
+    let titleFontPx = isMobile ? 34 : 46;
+    // The canvas is a fixed 800x600 scaled with FIT, so on a 390px-wide phone
+    // every design px renders at roughly 0.49 CSS px. The old 20px subtitle
+    // landed at ~9 CSS px; 32 design px lands at ~15.6, which is readable.
+    const subtitleFontPx = isMobile ? 26 : 32;
+    const titlePadX = isMobile ? 16 : 34;
+    const titlePadY = isMobile ? 14 : 18;
+    const maxCardWidth = Math.max(260, width - 32);
 
+    // Created before the text so it stays behind it in the display list, but
+    // only filled in once the title has been measured — the plate used to be a
+    // hardcoded 520px while the title measures ~642px, so it hung off both ends.
     const titleBg = this.add.graphics();
-    titleBg.fillStyle(0x0b1d2e, 0.55);
-    titleBg.fillRoundedRect(
-      width / 2 - titleCardWidth / 2,
-      titleY - (isMobile ? 36 : 42),
-      titleCardWidth,
-      titleCardHeight,
-      20
-    );
 
     const titleText = this.add
       .text(width / 2, titleY, 'George the Cranky Guppy', {
-        fontSize: titleFontSize,
+        fontSize: `${titleFontPx}px`,
         color: '#ffffff',
         fontStyle: 'bold',
         stroke: '#0b1d2e',
         strokeThickness: isMobile ? 8 : 10,
       })
       .setOrigin(0.5);
+
+    const maxTextWidth = maxCardWidth - titlePadX * 2;
     if (isMobile) {
-      titleText.setWordWrapWidth(titleCardWidth - 24);
+      titleText.setWordWrapWidth(maxTextWidth);
+    } else if (titleText.width > maxTextWidth) {
+      // Only if the title is genuinely too wide for the canvas: shrink the type
+      // rather than let the plate and the text disagree again.
+      titleFontPx = Math.floor(titleFontPx * (maxTextWidth / titleText.width));
+      titleText.setFontSize(`${titleFontPx}px`);
     }
 
-    this.add
-      .text(width / 2, titleY + (isMobile ? 38 : 44), 'Book 1: The Water Has Opinions', {
-        fontSize: subtitleFontSize,
+    const subtitleText = this.add
+      .text(width / 2, titleY, 'Book 1: The Water Has Opinions', {
+        fontSize: `${subtitleFontPx}px`,
         color: '#a8d8f0',
         fontStyle: 'bold',
       })
       .setOrigin(0.5);
+    subtitleText.setY(
+      titleText.y + titleText.height / 2 + (isMobile ? 10 : 14) + subtitleText.height / 2
+    );
+
+    // Size the plate from the real measured text so it always contains it.
+    const titleCardWidth = Math.min(
+      maxCardWidth,
+      Math.max(260, Math.max(titleText.width, subtitleText.width) + titlePadX * 2)
+    );
+    const titleCardTop = titleText.y - titleText.height / 2 - titlePadY;
+    const titleCardHeight = subtitleText.y + subtitleText.height / 2 + titlePadY - titleCardTop;
+
+    titleBg.fillStyle(0x0b1d2e, 0.55);
+    titleBg.fillRoundedRect(
+      width / 2 - titleCardWidth / 2,
+      titleCardTop,
+      titleCardWidth,
+      titleCardHeight,
+      20
+    );
 
     // Big Om-Nom-Run-style start button.
     const btnWidth = isMobile ? Math.min(320, width - 80) : 260;
@@ -88,6 +114,9 @@ export class MenuScene extends Phaser.Scene {
 
     buttonZone.on('pointerdown', () => {
       this.soundManager.unlock();
+      // The ambience is a game-wide singleton (see utils/audio.ts), so it keeps
+      // looping into GameScene. The Menu deliberately does not stop it on shutdown;
+      // only the Settings music toggle does.
       this.soundManager.startAmbience();
 
       buttonZone.disableInteractive();
@@ -185,9 +214,5 @@ export class MenuScene extends Phaser.Scene {
       g.strokeCircle(x, y, 22);
     });
     return zone;
-  }
-
-  shutdown(): void {
-    this.soundManager.stopAmbience();
   }
 }

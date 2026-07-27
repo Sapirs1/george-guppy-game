@@ -7,11 +7,24 @@ function getAudioContext(scene: Phaser.Scene): AudioContext | undefined {
 }
 
 /**
+ * The ambience is a single game-wide stream, not a per-scene one: it is started from the
+ * PLAY button and keeps looping across scene changes. Holding the handle at module level
+ * is what makes `createWaterAmbience` idempotent, so a replay reuses the running source
+ * instead of stacking a second looping layer (and leaking its ~384KB buffer).
+ */
+let ambienceSource: AudioBufferSourceNode | undefined;
+
+/**
  * Creates a gentle looping water ambience made from filtered white noise.
- * Call from a scene's `create()` method and store the returned node if you want to stop it later.
+ * Safe to call any number of times: the first call starts the stream, later calls return
+ * the same node. Use `stopWaterAmbience()` to tear it down.
  * Returns undefined if Web Audio is unavailable.
  */
 export function createWaterAmbience(scene: Phaser.Scene): AudioBufferSourceNode | undefined {
+  if (ambienceSource) {
+    return ambienceSource;
+  }
+
   const ctx = getAudioContext(scene);
   if (!ctx) {
     return undefined;
@@ -39,7 +52,42 @@ export function createWaterAmbience(scene: Phaser.Scene): AudioBufferSourceNode 
   source.connect(filter).connect(gain).connect(ctx.destination);
   source.start();
 
+  ambienceSource = source;
+
+  // Release the handle if the browser ends the stream on its own.
+  source.onended = () => {
+    if (ambienceSource === source) {
+      ambienceSource = undefined;
+    }
+  };
+
   return source;
+}
+
+/**
+ * Stops the looping water ambience and releases its buffer, if one is running.
+ * Safe to call when nothing is playing.
+ */
+export function stopWaterAmbience(): void {
+  if (!ambienceSource) {
+    return;
+  }
+
+  try {
+    ambienceSource.stop();
+    ambienceSource.disconnect();
+  } catch {
+    // Already stopped by the browser.
+  }
+
+  ambienceSource = undefined;
+}
+
+/**
+ * True while the shared ambience stream is running.
+ */
+export function isWaterAmbiencePlaying(): boolean {
+  return ambienceSource !== undefined;
 }
 
 /**

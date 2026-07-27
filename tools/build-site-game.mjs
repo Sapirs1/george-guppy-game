@@ -20,13 +20,20 @@ const SRC_DIR = join(ROOT, 'george-guppy', 'src');
 const OUT_DIR = join(ROOT, 'site', 'game');
 const PHASER_CDN = 'https://esm.sh/phaser@3.88.2';
 
+// Neither the unit tests nor the hand-written Phaser type stub belong in a
+// production bundle — they were being transpiled and shipped to the web host.
+const SKIP_DIRS = new Set(['__tests__', 'types']);
+
 async function* walk(dir) {
   const entries = await readdir(dir, { withFileTypes: true });
   for (const entry of entries) {
     const path = join(dir, entry.name);
     if (entry.isDirectory()) {
+      if (SKIP_DIRS.has(entry.name)) {
+        continue;
+      }
       yield* walk(path);
-    } else if (entry.name.endsWith('.ts')) {
+    } else if (entry.name.endsWith('.ts') && !entry.name.endsWith('.d.ts')) {
       yield path;
     }
   }

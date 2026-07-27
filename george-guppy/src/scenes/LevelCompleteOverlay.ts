@@ -58,7 +58,9 @@ export class LevelCompleteOverlay extends Phaser.Scene {
     this.overlay.setScrollFactor(0).setDepth(1000);
 
     const cardWidth = Math.min(420, width * 0.85);
-    const cardHeight = 360;
+    // The finale card carries a second button (the book prompt), so it needs
+    // the extra height.
+    const cardHeight = isLastLevel ? 440 : 360;
     const cardX = (width - cardWidth) / 2;
     const cardY = (height - cardHeight) / 2;
 
@@ -69,8 +71,8 @@ export class LevelCompleteOverlay extends Phaser.Scene {
     const centerX = width / 2;
 
     this.add
-      .text(centerX, cardY + 44, 'Level Complete!', {
-        fontSize: '40px',
+      .text(centerX, cardY + 44, isLastLevel ? 'You got George home!' : 'Level Complete!', {
+        fontSize: isLastLevel ? '30px' : '40px',
         color: '#ffe600',
         fontStyle: 'bold',
         stroke: '#0b1d2e',
@@ -122,8 +124,22 @@ export class LevelCompleteOverlay extends Phaser.Scene {
     const buttonWidth = 240;
     const buttonHeight = 64;
     const buttonY = cardY + 264;
-    const buttonColor = isLastLevel ? 0x3498db : 0x2ecc71;
-    const buttonLabel = isLastLevel ? 'Home' : 'Next Level';
+    const buttonColor = isLastLevel ? 0xffb300 : 0x2ecc71;
+    const buttonLabel = isLastLevel ? 'Read Book 1' : 'Next Level';
+
+    // On the finale, point children (and the grown-up next to them) at the book
+    // the game is a companion to. Home is still one tap away, just below.
+    if (isLastLevel) {
+      this.add
+        .text(centerX, cardY + 206, 'George is even crankier in print.', {
+          fontSize: '18px',
+          color: '#d0efff',
+          align: 'center',
+        })
+        .setOrigin(0.5)
+        .setScrollFactor(0)
+        .setDepth(1002);
+    }
 
     const ctaBg = this.add.graphics();
     ctaBg.fillStyle(buttonColor, 1);
@@ -150,17 +166,75 @@ export class LevelCompleteOverlay extends Phaser.Scene {
       .setDepth(1004);
 
     zone.on('pointerdown', () => {
+      if (isLastLevel) {
+        // Deliberately does NOT tear the game down — the child keeps their
+        // finished game behind the new tab.
+        this.openBookPage();
+        return;
+      }
       this.scene.stop('GameScene');
       this.scene.stop();
-      if (isLastLevel) {
-        this.scene.start('Menu');
-      } else {
-        this.scene.start('GameScene', { levelIndex: this.levelIndex + 1 });
-      }
+      this.scene.start('GameScene', { levelIndex: this.levelIndex + 1 });
     });
 
     zone.on('pointerover', () => ctaText.setScale(1.05));
     zone.on('pointerout', () => ctaText.setScale(1));
+
+    if (isLastLevel) {
+      this.buildHomeButton(centerX, buttonY + 82);
+    }
+  }
+
+  /**
+   * Opens the Book 1 page in a new tab. The game usually runs inside an iframe
+   * on the site, so a new tab is used rather than navigating the frame — the
+   * child does not lose the game they just finished. Wrapped because a popup
+   * blocker (or an unusual embedding) can make this throw.
+   */
+  private openBookPage(): void {
+    try {
+      window.open('/start', '_blank', 'noopener');
+    } catch {
+      // Nothing useful to do — the Home button below is still available.
+    }
+  }
+
+  private buildHomeButton(centerX: number, y: number): void {
+    const w = 200;
+    const h = 52;
+
+    const bg = this.add.graphics();
+    bg.fillStyle(0x3498db, 1);
+    bg.fillRoundedRect(centerX - w / 2, y, w, h, 18);
+    bg.lineStyle(3, 0xffffff, 0.45);
+    bg.strokeRoundedRect(centerX - w / 2, y, w, h, 18);
+    bg.setScrollFactor(0).setDepth(1002);
+
+    const label = this.add
+      .text(centerX, y + h / 2, 'Home', {
+        fontSize: '26px',
+        color: '#ffffff',
+        fontStyle: 'bold',
+      })
+      .setOrigin(0.5)
+      .setScrollFactor(0)
+      .setDepth(1003);
+
+    const zone = this.add
+      .zone(centerX, y + h / 2, w, h)
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true })
+      .setScrollFactor(0)
+      .setDepth(1004);
+
+    zone.on('pointerdown', () => {
+      this.scene.stop('GameScene');
+      this.scene.stop();
+      this.scene.start('Menu');
+    });
+
+    zone.on('pointerover', () => label.setScale(1.05));
+    zone.on('pointerout', () => label.setScale(1));
   }
 
   private drawCard(x: number, y: number, w: number, h: number): void {

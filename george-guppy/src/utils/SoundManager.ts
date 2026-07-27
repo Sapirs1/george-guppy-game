@@ -1,4 +1,4 @@
-import { createWaterAmbience, playBubbleBlip, playCrankSound } from './audio.js';
+import { createWaterAmbience, playBubbleBlip, playCrankSound, stopWaterAmbience } from './audio.js';
 import { musicEnabled, sfxEnabled } from '../scenes/SettingsOverlay.js';
 
 /**
@@ -11,8 +11,6 @@ import { musicEnabled, sfxEnabled } from '../scenes/SettingsOverlay.js';
 
 export class SoundManager {
   private scene: Phaser.Scene;
-  private ambienceNode?: AudioBufferSourceNode;
-  private ambienceStarted = false;
   private bubblePending = false;
 
   constructor(scene: Phaser.Scene) {
@@ -35,40 +33,36 @@ export class SoundManager {
   }
 
   /**
-   * Starts the looping underwater ambience. Safe to call multiple times;
-   * only one ambience stream is created.
+   * Starts the looping underwater ambience. Safe to call multiple times: the stream
+   * itself is a game-wide singleton (see utils/audio.ts), so it is never layered twice.
+   * Does nothing while music is toggled off.
    */
   startAmbience(): void {
-    if (this.ambienceStarted || !musicEnabled) {
+    if (!musicEnabled) {
       return;
     }
     try {
-      this.ambienceNode = createWaterAmbience(this.scene);
+      createWaterAmbience(this.scene);
     } catch {
       // Web Audio unavailable; continue without ambience.
     }
-    this.ambienceStarted = true;
   }
 
   /**
-   * Stops the ambience stream, used when leaving a scene.
+   * Stops the shared ambience stream, used when music is toggled off.
    */
   stopAmbience(): void {
-    if (this.ambienceNode) {
-      try {
-        this.ambienceNode.stop();
-      } catch {
-        // Already stopped by the browser.
-      }
-      this.ambienceNode = undefined;
-    }
-    this.ambienceStarted = false;
+    stopWaterAmbience();
   }
 
   /**
    * Plays the bubble collect blip.
    */
   playBubbleBlip(): void {
+    if (!sfxEnabled) {
+      return;
+    }
+
     // Avoid overlapping blips if the user collects several bubbles instantly.
     if (this.bubblePending) {
       return;
@@ -84,6 +78,9 @@ export class SoundManager {
    * Plays the dissonant hazard/crank sound.
    */
   playCrank(): void {
+    if (!sfxEnabled) {
+      return;
+    }
     playCrankSound(this.scene);
   }
 }

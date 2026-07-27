@@ -30,9 +30,12 @@ export class MissionPanel {
     this.objective = objective;
     this.accentColor = accentColor;
     this.bg = scene.add.graphics();
+    // The canvas is a fixed 800x600 scaled with FIT, so on a 390px-wide phone
+    // every design px renders at roughly 0.49 CSS px. The objective used to be
+    // 14 design px — about 6.8 CSS px. 32 design px lands at ~15.6.
     this.checkIcon = scene.add
       .text(0, 0, '✓', {
-        fontSize: '18px',
+        fontSize: '30px',
         color: '#ffffff',
         fontStyle: 'bold',
       })
@@ -41,7 +44,7 @@ export class MissionPanel {
 
     this.objectiveText = scene.add
       .text(0, 0, objective, {
-        fontSize: '14px',
+        fontSize: '32px',
         color: '#ffffff',
         fontStyle: 'bold',
         align: 'right',
@@ -90,13 +93,19 @@ export class MissionPanel {
   }
 
   private updatePositions(): void {
-    const pad = 10;
+    const pad = 12;
     const width = this.scene.scale.width;
+    // At the larger, readable font a one-line objective would run most of the
+    // way across the canvas, so it wraps instead and the panel grows downwards.
+    this.objectiveText.setWordWrapWidth(Math.min(320, Math.max(160, width * 0.44)));
+
     const textWidth = Math.max(80, this.objectiveText.width);
-    const panelWidth = textWidth + pad * 2 + (this.completed ? 24 : 0);
+    const panelWidth = textWidth + pad * 2 + (this.completed ? 42 : 0);
     const panelHeight = this.objectiveText.height + pad * 2;
     const originX = width - 14 - panelWidth;
-    const originY = 14;
+    // Below GameScene's top-right pause button (56px plus its enlarged hit
+    // zone, ~84px of vertical reach) — at this size the panel would cover it.
+    const originY = 96;
 
     this.bg.clear();
     // Drop shadow.
@@ -112,7 +121,7 @@ export class MissionPanel {
     this.objectiveText.setPosition(originX + panelWidth - pad, originY + pad);
 
     if (this.completed) {
-      this.checkIcon.setPosition(originX + pad + 8, originY + panelHeight / 2);
+      this.checkIcon.setPosition(originX + pad + 15, originY + panelHeight / 2);
     }
   }
 }
