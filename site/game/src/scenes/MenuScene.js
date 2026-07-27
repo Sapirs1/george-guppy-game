@@ -11,6 +11,7 @@ export class MenuScene extends Phaser.Scene {
   create()       {
     this.soundManager = new SoundManager(this);
     const { width, height } = this.scale;
+    const isMobile = width < 600;
 
     this.add
       .image(width / 2, height / 2, 'background_tank')
@@ -18,35 +19,49 @@ export class MenuScene extends Phaser.Scene {
       .setAlpha(0.65);
 
     // Decorative swimming George below the title card.
-    this.add.sprite(width / 2, height / 2 + 110, 'george').setScale(1.7);
+    this.add.sprite(width / 2, height / 2 + 110, 'george').setScale(isMobile ? 1.2 : 1.7);
 
     // Title card with a subtle dark backing so it pops against the bubbles.
     const titleY = height / 2 - 130;
+    const titleCardWidth = isMobile ? Math.max(260, width - 32) : 520;
+    const titleCardHeight = isMobile ? 90 : 100;
+    const titleFontSize = isMobile ? '34px' : '46px';
+    const subtitleFontSize = isMobile ? '16px' : '20px';
+
     const titleBg = this.add.graphics();
     titleBg.fillStyle(0x0b1d2e, 0.55);
-    titleBg.fillRoundedRect(width / 2 - 260, titleY - 42, 520, 100, 20);
+    titleBg.fillRoundedRect(
+      width / 2 - titleCardWidth / 2,
+      titleY - (isMobile ? 36 : 42),
+      titleCardWidth,
+      titleCardHeight,
+      20
+    );
 
-    this.add
+    const titleText = this.add
       .text(width / 2, titleY, 'George the Cranky Guppy', {
-        fontSize: '46px',
+        fontSize: titleFontSize,
         color: '#ffffff',
         fontStyle: 'bold',
         stroke: '#0b1d2e',
-        strokeThickness: 10,
+        strokeThickness: isMobile ? 8 : 10,
       })
       .setOrigin(0.5);
+    if (isMobile) {
+      titleText.setWordWrapWidth(titleCardWidth - 24);
+    }
 
     this.add
-      .text(width / 2, titleY + 44, 'Book 1: The Water Has Opinions', {
-        fontSize: '20px',
+      .text(width / 2, titleY + (isMobile ? 38 : 44), 'Book 1: The Water Has Opinions', {
+        fontSize: subtitleFontSize,
         color: '#a8d8f0',
         fontStyle: 'bold',
       })
       .setOrigin(0.5);
 
     // Big Om-Nom-Run-style start button.
-    const btnWidth = 260;
-    const btnHeight = 76;
+    const btnWidth = isMobile ? Math.min(320, width - 80) : 260;
+    const btnHeight = isMobile ? 84 : 76;
     const btnX = width / 2 - btnWidth / 2;
     const btnY = height / 2 + 22;
 
