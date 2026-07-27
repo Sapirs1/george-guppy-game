@@ -1,0 +1,702 @@
+{
+  "scenes": [
+    {
+      "name": "Main",
+      "url": "1121883.json"
+    }
+  ],
+  "scripts": [
+    {
+      "id": "45188814",
+      "name": "chracterRaycastController.js",
+      "type": "script"
+    },
+    {
+      "id": "45188815",
+      "name": "APIController.js",
+      "type": "script"
+    },
+    {
+      "id": "45188817",
+      "name": "RestartLocation.js",
+      "type": "script"
+    },
+    {
+      "id": "45188831",
+      "name": "gameplayGlobals.js",
+      "type": "script"
+    },
+    {
+      "id": "45188833",
+      "name": "fly-camera.js",
+      "type": "script"
+    },
+    {
+      "id": "45188841",
+      "name": "backgroundController.js",
+      "type": "script"
+    },
+    {
+      "id": "45188859",
+      "name": "MissionPanelSmall.js",
+      "type": "script"
+    },
+    {
+      "id": "45188872",
+      "name": "Trigger.js",
+      "type": "script"
+    },
+    {
+      "id": "45188873",
+      "name": "Collectable.js",
+      "type": "script"
+    },
+    {
+      "id": "45188911",
+      "name": "basis.js",
+      "type": "script"
+    },
+    {
+      "id": "45188974",
+      "name": "characterCollisionController.js",
+      "type": "script"
+    },
+    {
+      "id": "45189012",
+      "name": "EventTypes.js",
+      "type": "script"
+    },
+    {
+      "id": "45189016",
+      "name": "characterAnimator.js",
+      "type": "script"
+    },
+    {
+      "id": "45189020",
+      "name": "localizationManager.js",
+      "type": "script"
+    },
+    {
+      "id": "45189023",
+      "name": "characterAnimationController.js",
+      "type": "script"
+    },
+    {
+      "id": "45189036",
+      "name": "characterPreviewAnimationsManager.js",
+      "type": "script"
+    },
+    {
+      "id": "45189037",
+      "name": "characterLaneChangeController.js",
+      "type": "script"
+    },
+    {
+      "id": "45189038",
+      "name": "CharacterUpgradeLocation.js",
+      "type": "script"
+    },
+    {
+      "id": "45189062",
+      "name": "TransitionScreen.js",
+      "type": "script"
+    },
+    {
+      "id": "45189204",
+      "name": "obstaclesBlockConfig.js",
+      "type": "script"
+    },
+    {
+      "id": "45189209",
+      "name": "soundController.js",
+      "type": "script"
+    },
+    {
+      "id": "45189212",
+      "name": "gameplayCamera.js",
+      "type": "script"
+    },
+    {
+      "id": "45189215",
+      "name": "powerupManager.js",
+      "type": "script"
+    },
+    {
+      "id": "45189218",
+      "name": "CircularSawRotation.js",
+      "type": "script"
+    },
+    {
+      "id": "45189240",
+      "name": "MissionsLocation.js",
+      "type": "script"
+    },
+    {
+      "id": "45189270",
+      "name": "magnetAccessoryAnimator.js",
+      "type": "script"
+    },
+    {
+      "id": "45189291",
+      "name": "GameObjectTypes.js",
+      "type": "script"
+    },
+    {
+      "id": "45189294",
+      "name": "secretPathDoor.js",
+      "type": "script"
+    },
+    {
+      "id": "45189303",
+      "name": "robotFactoryDoorsAnimationManager.js",
+      "type": "script"
+    },
+    {
+      "id": "45189414",
+      "name": "LevelParserGUI.js",
+      "type": "script"
+    },
+    {
+      "id": "45189451",
+      "name": "LevelParser.js",
+      "type": "script"
+    },
+    {
+      "id": "45189491",
+      "name": "highJumpBootsAnimator.js",
+      "type": "script"
+    },
+    {
+      "id": "45189497",
+      "name": "triggerController.js",
+      "type": "script"
+    },
+    {
+      "id": "45189527",
+      "name": "ReturnToGamePopup.js",
+      "type": "script"
+    },
+    {
+      "id": "45189537",
+      "name": "CameraController.js",
+      "type": "script"
+    },
+    {
+      "id": "45189558",
+      "name": "exclamationMarkIndidcator.js",
+      "type": "script"
+    },
+    {
+      "id": "45189589",
+      "name": "powerupCollectable.js",
+      "type": "script"
+    },
+    {
+      "id": "45189597",
+      "name": "commonParticleBurstEffect.js",
+      "type": "script"
+    },
+    {
+      "id": "45189611",
+      "name": "ammo.js",
+      "type": "script"
+    },
+    {
+      "id": "45189614",
+      "name": "mainMenuUI.js",
+      "type": "script"
+    },
+    {
+      "id": "45189622",
+      "name": "LevelObjectPool.js",
+      "type": "script"
+    },
+    {
+      "id": "45189624",
+      "name": "gameStateController.js",
+      "type": "script"
+    },
+    {
+      "id": "45189660",
+      "name": "Preloader.js",
+      "type": "script"
+    },
+    {
+      "id": "45189776",
+      "name": "loadingOverlay.js",
+      "type": "script"
+    },
+    {
+      "id": "45189813",
+      "name": "FreeRunLocation.js",
+      "type": "script"
+    },
+    {
+      "id": "45189818",
+      "name": "charactersManager.js",
+      "type": "script"
+    },
+    {
+      "id": "45189834",
+      "name": "lookAtActiveCamera.js",
+      "type": "script"
+    },
+    {
+      "id": "45189856",
+      "name": "basis.wasm.js",
+      "type": "script"
+    },
+    {
+      "id": "45189878",
+      "name": "mouse-input.js",
+      "type": "script"
+    },
+    {
+      "id": "45189925",
+      "name": "StuntChampionshipLocation.js",
+      "type": "script"
+    },
+    {
+      "id": "45189928",
+      "name": "MissionReward.js",
+      "type": "script"
+    },
+    {
+      "id": "45189929",
+      "name": "CharacterPowerBoomEffect.js",
+      "type": "script"
+    },
+    {
+      "id": "45189932",
+      "name": "levelMissionController.js",
+      "type": "script"
+    },
+    {
+      "id": "45189934",
+      "name": "distanceActivatedObject.js",
+      "type": "script"
+    },
+    {
+      "id": "45190019",
+      "name": "laneObjectMovement.js",
+      "type": "script"
+    },
+    {
+      "id": "45190037",
+      "name": "RevivePopup.js",
+      "type": "script"
+    },
+    {
+      "id": "45190046",
+      "name": "MissionPanelBig.js",
+      "type": "script"
+    },
+    {
+      "id": "45190066",
+      "name": "MissionTypes.js",
+      "type": "script"
+    },
+    {
+      "id": "45190160",
+      "name": "StationGooRotation.js",
+      "type": "script"
+    },
+    {
+      "id": "45190163",
+      "name": "languageSelectionPopup.js",
+      "type": "script"
+    },
+    {
+      "id": "45190165",
+      "name": "BlocksStorage.js",
+      "type": "script"
+    },
+    {
+      "id": "45190166",
+      "name": "DatGUI.js",
+      "type": "script"
+    },
+    {
+      "id": "45190192",
+      "name": "settingsPopup.js",
+      "type": "script"
+    },
+    {
+      "id": "45190213",
+      "name": "utils.js",
+      "type": "script"
+    },
+    {
+      "id": "45190239",
+      "name": "stuntRamp.js",
+      "type": "script"
+    },
+    {
+      "id": "45190263",
+      "name": "ammo.wasm.js",
+      "type": "script"
+    },
+    {
+      "id": "45190317",
+      "name": "characterCameraController.js",
+      "type": "script"
+    },
+    {
+      "id": "45190322",
+      "name": "CoinsStorage.js",
+      "type": "script"
+    },
+    {
+      "id": "45190323",
+      "name": "spaceStationDoorAnimationManager.js",
+      "type": "script"
+    },
+    {
+      "id": "45190333",
+      "name": "ScaleManager.js",
+      "type": "script"
+    },
+    {
+      "id": "45190335",
+      "name": "animationController.js",
+      "type": "script"
+    },
+    {
+      "id": "45190366",
+      "name": "firstPersonViewCamera.js",
+      "type": "script"
+    },
+    {
+      "id": "45190378",
+      "name": "selfAttachableAcessory.js",
+      "type": "script"
+    },
+    {
+      "id": "45190379",
+      "name": "roadBlocksManager.js",
+      "type": "script"
+    },
+    {
+      "id": "45190393",
+      "name": "brandingImage.js",
+      "type": "script"
+    },
+    {
+      "id": "45190438",
+      "name": "CurvatureController.js",
+      "type": "script"
+    },
+    {
+      "id": "45190446",
+      "name": "stuntController.js",
+      "type": "script"
+    },
+    {
+      "id": "45190458",
+      "name": "AssetsLoader.js",
+      "type": "script"
+    },
+    {
+      "id": "45190462",
+      "name": "lobbyCamera.js",
+      "type": "script"
+    },
+    {
+      "id": "45190465",
+      "name": "tween.js",
+      "type": "script"
+    },
+    {
+      "id": "45190497",
+      "name": "GameplayLocation.js",
+      "type": "script"
+    },
+    {
+      "id": "45190525",
+      "name": "scooterAcessoryAnimator.js",
+      "type": "script"
+    },
+    {
+      "id": "45190544",
+      "name": "fps.js",
+      "type": "script"
+    },
+    {
+      "id": "45190550",
+      "name": "roadPrefabConfig.js",
+      "type": "script"
+    },
+    {
+      "id": "45190600",
+      "name": "characterController.js",
+      "type": "script"
+    },
+    {
+      "id": "45190627",
+      "name": "stuntVFX.js",
+      "type": "script"
+    },
+    {
+      "id": "45190677",
+      "name": "blockBuilder.js",
+      "type": "script"
+    },
+    {
+      "id": "45190686",
+      "name": "movementController.js",
+      "type": "script"
+    },
+    {
+      "id": "45190951",
+      "name": "coinsCounter.js",
+      "type": "script"
+    },
+    {
+      "id": "45191282",
+      "name": "currentBlockInfo.js",
+      "type": "script"
+    },
+    {
+      "id": "45191358",
+      "name": "PowerUpUiManager.js",
+      "type": "script"
+    },
+    {
+      "id": "45191362",
+      "name": "orbit-camera.js",
+      "type": "script"
+    },
+    {
+      "id": "45191414",
+      "name": "characterAccessoriesController.js",
+      "type": "script"
+    },
+    {
+      "id": "45191459",
+      "name": "lerp-and-slerp-camera.js",
+      "type": "script"
+    },
+    {
+      "id": "45191540",
+      "name": "dat.gui.min.js",
+      "type": "script"
+    },
+    {
+      "id": "45191587",
+      "name": "victoryConfettiEffect.js",
+      "type": "script"
+    },
+    {
+      "id": "45191616",
+      "name": "characterMovementController.js",
+      "type": "script"
+    },
+    {
+      "id": "45191652",
+      "name": "tempRotationScript.js",
+      "type": "script"
+    },
+    {
+      "id": "45191694",
+      "name": "NotEnoughCoinsPopup.js",
+      "type": "script"
+    },
+    {
+      "id": "45191705",
+      "name": "FogController.js",
+      "type": "script"
+    },
+    {
+      "id": "45191860",
+      "name": "characterShadowController.js",
+      "type": "script"
+    },
+    {
+      "id": "45191863",
+      "name": "localRotation.js",
+      "type": "script"
+    },
+    {
+      "id": "45191888",
+      "name": "distanceTrigger.js",
+      "type": "script"
+    },
+    {
+      "id": "45192009",
+      "name": "musicController.js",
+      "type": "script"
+    },
+    {
+      "id": "45192058",
+      "name": "wormholeBackgroundEffect.js",
+      "type": "script"
+    },
+    {
+      "id": "45192208",
+      "name": "spaceBackground.js",
+      "type": "script"
+    },
+    {
+      "id": "45192444",
+      "name": "scalePulseTween.js",
+      "type": "script"
+    },
+    {
+      "id": "45192520",
+      "name": "LevelStatsManager.js",
+      "type": "script"
+    },
+    {
+      "id": "45192540",
+      "name": "gameConfig.js",
+      "type": "script"
+    },
+    {
+      "id": "45192603",
+      "name": "powerupSpot.js",
+      "type": "script"
+    },
+    {
+      "id": "45192607",
+      "name": "spaceFlyController.js",
+      "type": "script"
+    },
+    {
+      "id": "45192615",
+      "name": "MissionsManager.js",
+      "type": "script"
+    },
+    {
+      "id": "45192623",
+      "name": "InterlocationLoading.js",
+      "type": "script"
+    },
+    {
+      "id": "45192629",
+      "name": "inputController.js",
+      "type": "script"
+    },
+    {
+      "id": "45192634",
+      "name": "GiveUpPopup.js",
+      "type": "script"
+    },
+    {
+      "id": "45192648",
+      "name": "Token.js",
+      "type": "script"
+    },
+    {
+      "id": "45192654",
+      "name": "beamsContainerRotation.js",
+      "type": "script"
+    },
+    {
+      "id": "45192693",
+      "name": "CollectRewardPopup.js",
+      "type": "script"
+    },
+    {
+      "id": "45192698",
+      "name": "touch-input.js",
+      "type": "script"
+    },
+    {
+      "id": "45192764",
+      "name": "ButtonLanguage.js",
+      "type": "script"
+    },
+    {
+      "id": "45192765",
+      "name": "LuckWheelLocation.js",
+      "type": "script"
+    },
+    {
+      "id": "45192766",
+      "name": "StuntsScoresNotifier.js",
+      "type": "script"
+    },
+    {
+      "id": "45192770",
+      "name": "CharacterOneRunLocation.js",
+      "type": "script"
+    },
+    {
+      "id": "45192771",
+      "name": "WinLocation.js",
+      "type": "script"
+    },
+    {
+      "id": "45192772",
+      "name": "DailyRewardsPopup.js",
+      "type": "script"
+    },
+    {
+      "id": "45192773",
+      "name": "MissionTarget.js",
+      "type": "script"
+    },
+    {
+      "id": "45192775",
+      "name": "basicButton.js",
+      "type": "script"
+    },
+    {
+      "id": "45192777",
+      "name": "Constants.js",
+      "type": "script"
+    },
+    {
+      "id": "45192779",
+      "name": "localStorageController.js",
+      "type": "script"
+    },
+    {
+      "id": "45192786",
+      "name": "uiController.js",
+      "type": "script"
+    },
+    {
+      "id": "45192787",
+      "name": "Coin.js",
+      "type": "script"
+    },
+    {
+      "id": "45716245",
+      "name": "copyrightText.js",
+      "type": "script"
+    },
+    {
+      "id": "46692690",
+      "name": "transparentUntilLoaded.js",
+      "type": "script"
+    },
+    {
+      "id": "62649463",
+      "name": "mobile-safe-area.js",
+      "type": "script"
+    },
+    {
+      "id": "66022823",
+      "name": "InputBlocker.js",
+      "type": "script"
+    }
+  ],
+  "texture_count": 502,
+  "model_count": 814,
+  "audio_count": 47,
+  "type_counts": {
+    "script": 135,
+    "template": 786,
+    "sprite": 222,
+    "audio": 47,
+    "animation": 275,
+    "json": 26,
+    "texture": 502,
+    "model": 814,
+    "textureatlas": 23,
+    "wasm": 2,
+    "font": 5,
+    "material": 498
+  }
+}

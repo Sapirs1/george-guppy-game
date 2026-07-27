@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Yechiel's Fishery Farm — Play George the Cranky Guppy</title>
+  <meta name="description" content="Yechiel's Fishery Farm — play George the Cranky Guppy, a free HTML5 underwater adventure game." />
+  <link rel="canonical" href="https://www.yechielsfisheryfarm.com/" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="site-header">
+    <h1>Yechiel's Fishery Farm</h1>
+    <nav aria-label="Main navigation">
+      <a href="index.html">Home</a>
+      <a href="activities.html">Activities</a>
+      <a href="#game">Play Game</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="welcome-heading">
+      <h2 id="welcome-heading">Welcome to the Farm</h2>
+      <p>Fresh, sustainable aquaculture and family-friendly activities.</p>
+    </section>
+
+    <section class="content" aria-labelledby="about-heading">
+      <h2 id="about-heading">About the Farm</h2>
+      <p>We raise healthy fish in clean, flowing water and welcome visitors to learn, explore, and play.</p>
+    </section>
+
+    <section class="game-section" id="game" aria-labelledby="game-heading">
+      <h2 id="game-heading">Play George the Cranky Guppy</h2>
+      <p class="game-instructions">Tap or click anywhere to swim. Collect bubbles, meet sea creatures, and dodge drains.</p>
+
+      <div class="game-frame" role="img" aria-label="George the Cranky Guppy game">
+        <iframe
+          id="george-guppy-frame"
+          src="game/index.html"
+          title="George the Cranky Guppy"
+          loading="lazy"
+          allow="autoplay; fullscreen"
+          sandbox="allow-scripts allow-same-origin allow-popups"
+        ></iframe>
+        <noscript>
+          <div class="game-fallback">
+            <p>JavaScript is required to play George the Cranky Guppy.</p>
+            <a class="cta" href="activities.html">View more activities</a>
+          </div>
+        </noscript>
+      </div>
+
+      <p class="game-meta">
+        <a href="activities.html" class="text-link">More farm activities →</a>
+      </p>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>© Yechiel's Fishery Farm. <a href="activities.html">Activities</a></p>
+  </footer>
+
+  <script src="embed.js" defer></script>
+</body>
+</html>

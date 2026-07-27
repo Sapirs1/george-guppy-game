@@ -1,0 +1,20 @@
+# Environment & tooling caches
+.venv/
+.playwright-mcp/
+
+# Temporary research artifacts from Om Nom Run probe
+omnom-*.png
+omnom-*.json
+omnom-console.log
+test.ts
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Leftover from accidental nested git init
+.git-nested-backup/
+
+# Editor files (if any)
+.vscode/
+*.swp

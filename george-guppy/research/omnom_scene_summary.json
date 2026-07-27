@@ -1,0 +1,43 @@
+{
+  "total_entities": 1169,
+  "scene_name": "Main",
+  "settings_sample": {
+    "physics": {
+      "gravity": [
+        0,
+        -9.8,
+        0
+      ]
+    },
+    "render": {
+      "fog_end": 1000,
+      "tonemapping": 0,
+      "skybox": null,
+      "fog_density": 0.07,
+      "gamma_correction": 1,
+      "exposure": 1,
+      "fog_start": 150,
+      "global_ambient": [
+        0.2,
+        0.2,
+        0.2
+      ],
+      "skyboxIntensity": 1,
+      "fog_color": [
+        0.8745098039215686,
+        1,
+        1
+      ],
+      "lightmapMode": 1,
+      "fog": "none",
+      "lightmapMaxResolution": 2048,
+      "skyboxMip": 0,
+      "lightmapSizeMultiplier": 16,
+      "skyboxRotation": [
+        0,
+        0,
+        0
+      ]
+    }
+  }
+}

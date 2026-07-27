@@ -1,0 +1,175 @@
+/* Fishery Farm site styles — SEO/UX safe embed layout */
+
+:root {
+  --bg: #f5f9fc;
+  --text: #1a2a3a;
+  --accent: #2f7fb6;
+  --accent-hover: #1f5f8e;
+  --shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.6;
+  color: var(--text);
+  background: var(--bg);
+}
+
+.site-header,
+.site-footer {
+  background: #0b1d2e;
+  color: #fff;
+  padding: 1rem 1.25rem;
+}
+
+.site-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.site-header h1 {
+  font-size: 1.5rem;
+  margin: 0;
+}
+
+.site-header nav {
+  display: flex;
+  gap: 1.25rem;
+}
+
+.site-header a,
+.site-footer a {
+  color: #a8d8f0;
+  text-decoration: none;
+}
+
+.site-header a:hover,
+.site-footer a:hover {
+  text-decoration: underline;
+}
+
+main {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+}
+
+.hero,
+.content,
+.activity-card,
+.game-section {
+  margin-bottom: 2rem;
+}
+
+.hero h2,
+.game-section h2 {
+  font-size: 1.875rem;
+  margin: 0 0 0.5rem;
+}
+
+.hero p,
+.game-instructions {
+  margin: 0 0 1rem;
+  color: #4a5a6a;
+}
+
+.activity-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 1.25rem;
+  box-shadow: var(--shadow);
+}
+
+.activity-card h3 {
+  margin: 0 0 0.5rem;
+  color: var(--accent);
+}
+
+/* Game embed wrapper: fixed aspect ratio, no CLS */
+.game-frame {
+  position: relative;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto 1rem;
+  aspect-ratio: 16 / 10;
+  background: #0b1d2e;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  border: 3px solid #62c4f5;
+}
+
+.game-frame iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.game-frame iframe[loading="lazy"] {
+  background: #0b1d2e;
+}
+
+.game-fallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #a8d8f0;
+  text-align: center;
+  padding: 1rem;
+}
+
+.cta,
+.text-link {
+  display: inline-block;
+  background: var(--accent);
+  color: #fff;
+  padding: 0.6rem 1.2rem;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  margin-top: 0.5rem;
+}
+
+.cta:hover,
+.text-link:hover {
+  background: var(--accent-hover);
+}
+
+.text-link {
+  background: transparent;
+  color: var(--accent);
+  padding: 0;
+}
+
+.game-meta {
+  text-align: center;
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .site-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .game-frame {
+    aspect-ratio: 4 / 5;
+  }
+}
