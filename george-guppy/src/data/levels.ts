@@ -28,9 +28,9 @@ export const levels: LevelConfig[] = [
       { x: 700, y: 250 },
     ],
     bubbles: [
-      { x: 320, y: 260, text: 'odd' },
-      { x: 520, y: 360 },
-      { x: 680, y: 160 },
+      { x: 320, y: 260, text: 'not' },
+      { x: 520, y: 360, text: 'my' },
+      { x: 680, y: 160, text: 'tank' },
     ],
     npcs: [
       { x: 700, y: 500, texture: 'snail', dialogKey: 'snail_intro' },
@@ -39,7 +39,7 @@ export const levels: LevelConfig[] = [
   },
   {
     id: 1,
-    name: 'Rain Barrel',
+    name: 'Bog',
     backgroundKey: 'bg_rain_barrel',
     width: 800,
     height: 600,
@@ -59,13 +59,13 @@ export const levels: LevelConfig[] = [
       { x: 600, y: 450 },
     ],
     bubbles: [
-      { x: 200, y: 200 },
-      { x: 400, y: 300, text: 'gulp' },
-      { x: 650, y: 150 },
-      { x: 500, y: 500 },
+      { x: 200, y: 200, text: 'too' },
+      { x: 400, y: 300, text: 'dark' },
+      { x: 650, y: 150, text: 'in' },
+      { x: 500, y: 500, text: 'here' },
     ],
     npcs: [
-      { x: 700, y: 300, texture: 'frog', dialogKey: 'sponge_wisdom' },
+      { x: 700, y: 300, texture: 'frog', dialogKey: 'frog_barrel' },
     ],
     hazards: [
       { x: 400, y: 520, texture: 'drain' },
@@ -78,7 +78,7 @@ export const levels: LevelConfig[] = [
     backgroundKey: 'bg_kitchen_sink',
     width: 800,
     height: 600,
-    objective: 'Find the sponge of wisdom',
+    objective: 'Find Molly',
     playerStart: { x: 100, y: 500 },
     walls: [
       { x: 0, y: 0 },
@@ -96,13 +96,13 @@ export const levels: LevelConfig[] = [
       { x: 350, y: 300 },
     ],
     bubbles: [
-      { x: 250, y: 200, text: 'soap' },
-      { x: 550, y: 220 },
-      { x: 400, y: 450 },
-      { x: 680, y: 480 },
+      { x: 250, y: 200, text: 'far' },
+      { x: 550, y: 220, text: 'too' },
+      { x: 400, y: 450, text: 'warm' },
+      { x: 680, y: 480, text: 'here' },
     ],
     npcs: [
-      { x: 600, y: 100, texture: 'sponge', dialogKey: 'sponge_wisdom' },
+      { x: 600, y: 100, texture: 'molly', dialogKey: 'molly_wisdom' },
     ],
   },
   {
@@ -121,11 +121,14 @@ export const levels: LevelConfig[] = [
     ],
     bubbles: [
       { x: 220, y: 280, text: 'home' },
-      { x: 500, y: 320 },
-      { x: 700, y: 500 },
+      { x: 500, y: 320, text: 'at' },
+      { x: 700, y: 500, text: 'last' },
     ],
     npcs: [
-      { x: 700, y: 120, texture: 'snail', dialogKey: 'victory_epilogue' },
+      // Deliberately NOT 'victory_epilogue' — that bank is the finale, and
+      // giving it to this snail let a child read the ending before earning it,
+      // then watch it replay on completion.
+      { x: 700, y: 120, texture: 'snail', dialogKey: 'snail_homecoming' },
     ],
   },
 ];

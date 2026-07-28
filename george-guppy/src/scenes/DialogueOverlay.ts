@@ -48,10 +48,14 @@ export class DialogueOverlay extends Phaser.Scene {
     this.overlayGraphics = this.add.graphics();
     this.boxGraphics = this.add.graphics();
 
+    // The canvas is a fixed 800x600 scaled with FIT, so on a 390px-wide phone
+    // every design px renders at roughly 0.49 CSS px. The story text used to be
+    // 18 design px — about 8.8 CSS px, half the readable minimum. 34 design px
+    // lands at ~16.6 CSS px. The speaker name stays a step above it.
     this.nameText = this.add
       .text(0, 0, '', {
         fontFamily: 'Arial, Helvetica, sans-serif',
-        fontSize: '22px',
+        fontSize: '38px',
         color: '#ffffff',
         fontStyle: 'bold',
       })
@@ -60,7 +64,7 @@ export class DialogueOverlay extends Phaser.Scene {
     this.lineText = this.add
       .text(0, 0, '', {
         fontFamily: 'Arial, Helvetica, sans-serif',
-        fontSize: '18px',
+        fontSize: '34px',
         color: '#eeeeee',
       })
       .setDepth(1001);
@@ -68,7 +72,7 @@ export class DialogueOverlay extends Phaser.Scene {
     this.promptText = this.add
       .text(0, 0, 'Tap or press SPACE to continue', {
         fontFamily: 'Arial, Helvetica, sans-serif',
-        fontSize: '14px',
+        fontSize: '24px',
         color: '#aaccff',
       })
       .setOrigin(0.5, 1)
@@ -85,6 +89,11 @@ export class DialogueOverlay extends Phaser.Scene {
     this.setupPromptPulse();
 
     this.scale.on('resize', this.drawChrome, this);
+
+    // Phaser never calls a Scene subclass's shutdown() on its own. Without this the
+    // resize listener above survives every conversation and piles up on the global
+    // Scale Manager.
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.shutdown, this);
   }
 
   private drawChrome(): void {
@@ -96,25 +105,63 @@ export class DialogueOverlay extends Phaser.Scene {
     this.overlayGraphics.fillStyle(0x000000, 0.6);
     this.overlayGraphics.fillRect(0, 0, width, height);
 
-    // Rounded dialogue box pinned to the bottom of the viewport.
-    const boxWidth = Math.min(width * 0.8, 960);
-    const boxHeight = 140;
+    // Rounded dialogue box pinned to the bottom of the viewport. It is wider
+    // and taller than it used to be because the story text now renders at a
+    // size a child can actually read on a phone.
+    const padding = 26;
+    const nameGap = 14;
+    const promptGap = 16;
+    const bottomPadding = 18;
+
+    const boxWidth = Math.min(width * 0.92, 960);
+    this.lineText.setWordWrapWidth(boxWidth - padding * 2);
+
+    // Size the box to the tallest line in this conversation rather than a fixed
+    // 140px, so a long line is never clipped — and measure it once up front so
+    // the box does not resize under the reader while a line types itself out.
+    const nameHeight = this.nameText.height;
+    const bodyHeight = this.measureTallestLine();
+    const boxHeight =
+      padding +
+      nameHeight +
+      nameGap +
+      bodyHeight +
+      promptGap +
+      this.promptText.height +
+      bottomPadding;
+
     const boxX = (width - boxWidth) / 2;
-    const boxY = height - boxHeight - 32;
+    const boxY = Math.max(16, height - boxHeight - 32);
 
     this.boxGraphics.clear();
     this.boxGraphics.fillStyle(0x1a2a3a, 0.96);
     this.boxGraphics.fillRoundedRect(boxX, boxY, boxWidth, boxHeight, 16);
 
-    const padding = 24;
     const textX = boxX + padding;
     const textY = boxY + padding;
-    const wrapWidth = boxWidth - padding * 2;
 
     this.nameText.setPosition(textX, textY);
-    this.lineText.setPosition(textX, textY + 32);
-    this.lineText.setWordWrapWidth(wrapWidth);
-    this.promptText.setPosition(width / 2, boxY + boxHeight - 14);
+    this.lineText.setPosition(textX, textY + nameHeight + nameGap);
+    this.promptText.setPosition(width / 2, boxY + boxHeight - bottomPadding);
+  }
+
+  /**
+   * The tallest wrapped height across every line in this conversation, measured
+   * with the live Text object so it reflects the real font metrics.
+   */
+  private measureTallestLine(): number {
+    if (this.lines.length === 0) {
+      return this.lineText.height;
+    }
+
+    const restore = this.lineText.text;
+    let tallest = 0;
+    for (const line of this.lines) {
+      this.lineText.setText(line.text);
+      tallest = Math.max(tallest, this.lineText.height);
+    }
+    this.lineText.setText(restore);
+    return tallest;
   }
 
   private displayCurrentLine(): void {

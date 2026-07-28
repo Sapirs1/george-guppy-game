@@ -9,16 +9,24 @@
     html, body { width: 100%; height: 100%; overflow: hidden; background: #0b1d2e; touch-action: none; }
     #game-container { width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; }
     #loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #a8d8f0; font-family: system-ui, sans-serif; font-size: 1.25rem; pointer-events: none; z-index: 1; }
+    #rotate-prompt { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; flex-direction: column; gap: 16px; background: #0b1d2e; color: #eaf6ff; font-family: Nunito, system-ui, sans-serif; font-size: 1.25rem; text-align: center; padding: 24px; z-index: 10; }
+    #rotate-prompt svg { width: 64px; height: 64px; stroke: #ffd166; }
+    #rotate-prompt .hint { font-size: 1rem; color: #9dc4de; max-width: 320px; }
+    @media (orientation: portrait) and (max-width: 896px) { #rotate-prompt { display: flex; } #game-container canvas { visibility: hidden; } }
   </style>
-  <script type="importmap">
-  {
-    "imports": {
-      "phaser": "https://esm.sh/phaser@3.88.2"
-    }
-  }
-  </script>
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.88.2/dist/phaser.min.js"></script>
 </head>
 <body>
+  <div id="rotate-prompt">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+      <path d="M12 7v10"/>
+      <path d="M9 10l3-3 3 3"/>
+      <path d="M9 14l3 3 3-3"/>
+    </svg>
+    <div>Please rotate your device</div>
+    <div class="hint">George likes a little room. Turn your phone sideways to play.</div>
+  </div>
   <div id="game-container">
     <div id="loading">George is waking up…</div>
   </div>

@@ -16,6 +16,8 @@ export class MissionPanel {
   private checkIcon: Phaser.GameObjects.Text;
   private bg: Phaser.GameObjects.Graphics;
   private completed = false;
+  private retired = false;
+  private retireTimer?: Phaser.Time.TimerEvent;
   private destroyHandlers: (() => void)[] = [];
   private scene: Phaser.Scene;
   private objective: string;
@@ -24,15 +26,20 @@ export class MissionPanel {
   constructor(
     scene: Phaser.Scene,
     objective: string,
-    accentColor = 0xffe600
+    // `sun` — the shared hero accent. The old #ffe600 was a max-chroma primary
+    // and was most of what made the UI read as a 2013 flash game.
+    accentColor = 0xffd166
   ) {
     this.scene = scene;
     this.objective = objective;
     this.accentColor = accentColor;
     this.bg = scene.add.graphics();
+    // The canvas is a fixed 800x600 scaled with FIT, so on a 390px-wide phone
+    // every design px renders at roughly 0.49 CSS px. The objective used to be
+    // 14 design px — about 6.8 CSS px. 32 design px lands at ~15.6.
     this.checkIcon = scene.add
       .text(0, 0, '✓', {
-        fontSize: '18px',
+        fontSize: '30px',
         color: '#ffffff',
         fontStyle: 'bold',
       })
@@ -41,7 +48,7 @@ export class MissionPanel {
 
     this.objectiveText = scene.add
       .text(0, 0, objective, {
-        fontSize: '14px',
+        fontSize: '32px',
         color: '#ffffff',
         fontStyle: 'bold',
         align: 'right',
@@ -56,6 +63,41 @@ export class MissionPanel {
     const resizeCb = this.updatePositions.bind(this);
     scene.scale.on('resize', resizeCb);
     this.destroyHandlers.push(() => scene.scale.off('resize', resizeCb));
+
+    // Read it, then get out of the way. At a readable size this panel is big
+    // enough to sit in front of the level: on Kitchen Sink it covered the very
+    // molly the objective tells you to find, and elsewhere it hid a bubble the
+    // child needs to collect. The objective only matters at the start, so it
+    // retires itself; the HUD keeps the bubble count visible regardless.
+    this.retireTimer = scene.time.delayedCall(5500, () => this.retire());
+    this.destroyHandlers.push(() => this.retireTimer?.remove());
+  }
+
+  /** Fade the panel away so it can never obscure gameplay. */
+  private retire(): void {
+    if (this.retired) {
+      return;
+    }
+    this.retired = true;
+    this.scene.tweens.add({
+      targets: this.parts(),
+      alpha: 0,
+      duration: 400,
+      ease: 'Sine.easeIn',
+    });
+  }
+
+  /** Bring it back briefly — used to show the objective ticking off. */
+  private revive(): void {
+    this.retired = false;
+    this.retireTimer?.remove();
+    for (const part of this.parts()) {
+      part.setAlpha(1);
+    }
+  }
+
+  private parts(): [Phaser.GameObjects.Graphics, Phaser.GameObjects.Text, Phaser.GameObjects.Text] {
+    return [this.bg, this.objectiveText, this.checkIcon];
   }
 
   setObjective(value: string): void {
@@ -69,17 +111,22 @@ export class MissionPanel {
       return;
     }
     this.completed = true;
+    // Pop back into view so the child actually sees the objective tick off,
+    // then retire again.
+    this.revive();
     this.objectiveText.setColor('#8aff8a');
     this.checkIcon.setVisible(true);
     this.updatePositions();
 
     this.scene.tweens.add({
-      targets: [this.bg, this.objectiveText, this.checkIcon],
+      targets: this.parts(),
       scaleX: 1.08,
       scaleY: 1.08,
       duration: 120,
       yoyo: true,
     });
+
+    this.retireTimer = this.scene.time.delayedCall(1800, () => this.retire());
   }
 
   destroy(): void {
@@ -90,13 +137,19 @@ export class MissionPanel {
   }
 
   private updatePositions(): void {
-    const pad = 10;
+    const pad = 12;
     const width = this.scene.scale.width;
+    // At the larger, readable font a one-line objective would run most of the
+    // way across the canvas, so it wraps instead and the panel grows downwards.
+    this.objectiveText.setWordWrapWidth(Math.min(320, Math.max(160, width * 0.44)));
+
     const textWidth = Math.max(80, this.objectiveText.width);
-    const panelWidth = textWidth + pad * 2 + (this.completed ? 24 : 0);
+    const panelWidth = textWidth + pad * 2 + (this.completed ? 42 : 0);
     const panelHeight = this.objectiveText.height + pad * 2;
     const originX = width - 14 - panelWidth;
-    const originY = 14;
+    // Below GameScene's top-right pause button (56px plus its enlarged hit
+    // zone, ~84px of vertical reach) — at this size the panel would cover it.
+    const originY = 96;
 
     this.bg.clear();
     // Drop shadow.
@@ -112,7 +165,7 @@ export class MissionPanel {
     this.objectiveText.setPosition(originX + panelWidth - pad, originY + pad);
 
     if (this.completed) {
-      this.checkIcon.setPosition(originX + pad + 8, originY + panelHeight / 2);
+      this.checkIcon.setPosition(originX + pad + 15, originY + panelHeight / 2);
     }
   }
 }
