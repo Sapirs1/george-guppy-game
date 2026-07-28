@@ -1,3 +1,9 @@
+// Phaser is used at RUNTIME here (instanceof / class extends), not just as a
+// type. Without this import it resolved only via a window.Phaser global that the
+// classic-script vendor build happens to set — so the ESM/importmap build threw
+// "Phaser is not defined".
+import Phaser from 'phaser';
+
 export interface NPCInteractEvent {
   dialogKey: string;
   npc: NPC;

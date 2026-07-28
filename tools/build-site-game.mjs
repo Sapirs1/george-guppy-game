@@ -45,7 +45,25 @@ function transpile(buf) {
   return stripTypeScriptTypes(source, { mode: 'strip' });
 }
 
-function rewriteSpecifier(specifier) {
+/**
+ * Resolve the bare `phaser` specifier to a real relative path.
+ *
+ * Bare specifiers require an import map, which only landed in Safari 16.4
+ * (March 2023). iPads capped at iPadOS 15 — Air 2, mini 4, 5th gen, i.e. exactly
+ * the hand-me-down devices this audience uses — cannot resolve it, so the whole
+ * module graph silently fails to evaluate and the child gets a spinner. A
+ * relative path needs no import map and works back to Safari 11.
+ *
+ * `depth` is how many directories deep the importing file sits inside src/.
+ */
+function phaserSpecifierFor(depth) {
+  return `${'../'.repeat(depth + 1)}vendor/phaser-shim.js`;
+}
+
+function rewriteSpecifier(specifier, depth) {
+  if (specifier === 'phaser') {
+    return phaserSpecifierFor(depth);
+  }
   if (specifier.startsWith('./') || specifier.startsWith('../')) {
     const withoutTs = specifier.replace(/\.ts$/u, '');
     if (!withoutTs.endsWith('.js') && !withoutTs.endsWith('.json')) {
@@ -56,11 +74,11 @@ function rewriteSpecifier(specifier) {
   return specifier;
 }
 
-function rewriteImports(code) {
+function rewriteImports(code, depth) {
   return code.replace(
     /((?:import\s+(?:[^'"]*?)\s+from\s+|export\s+(?:[^'"]*?)\s+from\s+|import\s+)['"])([^'"]+)(['"];?)/gu,
     (_match, prefix, specifier, suffix) => {
-      return `${prefix}${rewriteSpecifier(specifier).replace(/\\/gu, '/')}${suffix}`;
+      return `${prefix}${rewriteSpecifier(specifier, depth).replace(/\\/gu, '/')}${suffix}`;
     }
   );
 }
@@ -68,15 +86,34 @@ function rewriteImports(code) {
 async function main() {
   await mkdir(OUT_DIR, { recursive: true });
 
+  // Emit a tiny ESM shim so every `import Phaser from 'phaser'` can resolve
+  // through a relative path (no import map required). It re-exports the
+  // Phaser global loaded via a classic script tag, which works even on older
+  // Safari/iPadOS versions that don't support import maps.
+  const vendorDir = join(OUT_DIR, 'vendor');
+  await mkdir(vendorDir, { recursive: true });
+  const shim = `// Auto-generated Phaser shim for the standalone ESM build.\n` +
+    `export default window.Phaser;\n` +
+    `export const { Game, Scene, GameObjects, Math: PMath, Curves, Time, Input, Sound, Scale } = window.Phaser;\n`;
+  await writeFile(join(vendorDir, 'phaser-shim.js'), shim, 'utf-8');
+
+  // Inject the classic Phaser script into the standalone index so `window.Phaser`
+  // exists before any module loads.
+  const phaserScriptTag = `<script src="https://cdn.jsdelivr.net/npm/phaser@3.88.2/dist/phaser.min.js"></script>`;
+
   for await (const path of walk(SRC_DIR)) {
     const rel = relative(SRC_DIR, path);
     const outRel = rel.replace(/\.ts$/u, '.js');
     const outPath = join(OUT_DIR, 'src', outRel);
     await mkdir(dirname(outPath), { recursive: true });
 
+    // How many directories deep this file sits inside src/, so the `phaser`
+    // specifier can be rewritten to a correct relative path from HERE.
+    const depth = outRel.split(/[\\/]/u).length - 1;
+
     const source = await readFile(path);
     let js = transpile(source);
-    js = rewriteImports(js);
+    js = rewriteImports(js, depth);
 
     await writeFile(outPath, js, 'utf-8');
     console.log('built', outRel);
@@ -93,16 +130,24 @@ async function main() {
     html, body { width: 100%; height: 100%; overflow: hidden; background: #0b1d2e; touch-action: none; }
     #game-container { width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; }
     #loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #a8d8f0; font-family: system-ui, sans-serif; font-size: 1.25rem; pointer-events: none; z-index: 1; }
+    #rotate-prompt { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; flex-direction: column; gap: 16px; background: #0b1d2e; color: #eaf6ff; font-family: Nunito, system-ui, sans-serif; font-size: 1.25rem; text-align: center; padding: 24px; z-index: 10; }
+    #rotate-prompt svg { width: 64px; height: 64px; stroke: #ffd166; }
+    #rotate-prompt .hint { font-size: 1rem; color: #9dc4de; max-width: 320px; }
+    @media (orientation: portrait) and (max-width: 896px) { #rotate-prompt { display: flex; } #game-container canvas { visibility: hidden; } }
   </style>
-  <script type="importmap">
-  {
-    "imports": {
-      "phaser": "${PHASER_CDN}"
-    }
-  }
-  </script>
+  ${phaserScriptTag}
 </head>
 <body>
+  <div id="rotate-prompt">
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+      <path d="M12 7v10"/>
+      <path d="M9 10l3-3 3 3"/>
+      <path d="M9 14l3 3 3-3"/>
+    </svg>
+    <div>Please rotate your device</div>
+    <div class="hint">George likes a little room. Turn your phone sideways to play.</div>
+  </div>
   <div id="game-container">
     <div id="loading">George is waking up…</div>
   </div>

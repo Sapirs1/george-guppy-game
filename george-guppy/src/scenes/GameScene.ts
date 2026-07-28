@@ -16,6 +16,13 @@ interface NpcInteractEvent {
 }
 
 /**
+ * The object type Arcade Physics actually hands to a collide/overlap callback.
+ * Broader than `GameObject` (it also covers raw bodies and tiles), so handlers
+ * must declare this and narrow to their concrete type inside.
+ */
+type ArcadeCollisionObject = Parameters<Phaser.Types.Physics.Arcade.ArcadePhysicsCallback>[0];
+
+/**
  * GameScene – the main gameplay scene for George the Cranky Guppy.
  *
  * Loads a level, builds walls, bubbles, NPCs and hazards, handles tap-to-swim
@@ -44,6 +51,27 @@ export class GameScene extends Phaser.Scene {
   private totalBubbles = 0;
   private bubblesCollected = 0;
   private soundManager!: SoundManager;
+  private bubbleChain = 0;
+  private bubbleChainTimer?: Phaser.Time.TimerEvent;
+  private bubbleBurstEmitter?: Phaser.GameObjects.Particles.ParticleEmitter;
+  private hazardSparkEmitter?: Phaser.GameObjects.Particles.ParticleEmitter;
+  private victoryEmitter?: Phaser.GameObjects.Particles.ParticleEmitter;
+
+  // Keyboard controls mirror tap-to-swim: holding a direction swims that way;
+  // releasing stops George. Arrow keys, WASD and the numeric keypad all work.
+  private cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
+  private wasd?: Record<string, Phaser.Input.Keyboard.Key>;
+  private numpad?: {
+    up: Phaser.Input.Keyboard.Key;
+    down: Phaser.Input.Keyboard.Key;
+    left: Phaser.Input.Keyboard.Key;
+    right: Phaser.Input.Keyboard.Key;
+    upLeft: Phaser.Input.Keyboard.Key;
+    upRight: Phaser.Input.Keyboard.Key;
+    downLeft: Phaser.Input.Keyboard.Key;
+    downRight: Phaser.Input.Keyboard.Key;
+  };
+  private keyboardSwimming = false;
 
   // Sized for legibility once Scale.FIT halves everything on a phone: the HUD
   // text was 16px design == ~7 CSS px on a 390px screen, which no child can read.
@@ -53,6 +81,15 @@ export class GameScene extends Phaser.Scene {
   /** Extra clearance, beyond touching, before an NPC can start talking again. */
   private readonly npcReArmMargin = 24;
   private readonly victoryFlashDuration = 300;
+  /**
+   * How long a pop chain survives without a pop before it quietly restarts at the
+   * root note. The reset is deliberately silent and invisible — no "streak lost" sting,
+   * no counter to watch drain. Nobody can lose this game, so nothing is ever taken away;
+   * the chime just starts climbing again from the bottom.
+   */
+  private readonly bubbleChainResetDelay = 2500;
+  /** Particles draw above George and the bubbles, below the HUD. */
+  private readonly particleDepth = 5;
 
   constructor() {
     super({ key: 'GameScene' });
@@ -72,6 +109,8 @@ export class GameScene extends Phaser.Scene {
     this.colliders = [];
     this.totalBubbles = 0;
     this.bubblesCollected = 0;
+    this.bubbleChain = 0;
+    this.bubbleChainTimer = undefined;
   }
 
   create(): void {
@@ -84,6 +123,7 @@ export class GameScene extends Phaser.Scene {
 
     this.soundManager = new SoundManager(this);
     this.buildWorld(level);
+    this.buildParticles();
     this.buildWalls(level);
     this.buildPlayer(level);
     this.buildBubbles(level);
@@ -91,11 +131,80 @@ export class GameScene extends Phaser.Scene {
     this.buildHazards(level);
     this.buildUi(level);
     this.bindInput();
+    this.setupKeyboardInput();
     this.bindDialogueEvents();
 
     // Phaser never calls a Scene subclass's shutdown() on its own, so the cleanup
     // below has to be wired to the scene's SHUTDOWN event explicitly.
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.shutdown, this);
+  }
+
+  /** Wire up arrow keys, WASD and the numeric keypad. */
+  private setupKeyboardInput(): void {
+    if (!this.input.keyboard) {
+      return;
+    }
+
+    this.cursors = this.input.keyboard.createCursorKeys();
+    this.wasd = this.input.keyboard.addKeys('W,S,A,D') as Record<string, Phaser.Input.Keyboard.Key>;
+
+    const kb = this.input.keyboard;
+    const K = Phaser.Input.Keyboard.KeyCodes;
+    this.numpad = {
+      up: kb.addKey(K.NUMPAD_EIGHT),
+      down: kb.addKey(K.NUMPAD_TWO),
+      left: kb.addKey(K.NUMPAD_FOUR),
+      right: kb.addKey(K.NUMPAD_SIX),
+      upLeft: kb.addKey(K.NUMPAD_SEVEN),
+      upRight: kb.addKey(K.NUMPAD_NINE),
+      downLeft: kb.addKey(K.NUMPAD_ONE),
+      downRight: kb.addKey(K.NUMPAD_THREE),
+    };
+  }
+
+  /**
+   * Map held keys to a swim direction. We set a far-away target so the existing
+   * arrival-easing move code is reused; when the keys are released the target snaps
+   * back to George's current position and he coasts to a stop.
+   */
+  private handleKeyboardControls(): void {
+    if (!this.player?.active || this.overlayActive || this.levelCompleteTriggered) {
+      if (this.keyboardSwimming) {
+        this.keyboardSwimming = false;
+      }
+      return;
+    }
+
+    let dx = 0;
+    let dy = 0;
+
+    if (this.cursors?.left.isDown || this.wasd?.A.isDown || this.numpad?.left.isDown || this.numpad?.upLeft.isDown || this.numpad?.downLeft.isDown) {
+      dx -= 1;
+    }
+    if (this.cursors?.right.isDown || this.wasd?.D.isDown || this.numpad?.right.isDown || this.numpad?.upRight.isDown || this.numpad?.downRight.isDown) {
+      dx += 1;
+    }
+    if (this.cursors?.up.isDown || this.wasd?.W.isDown || this.numpad?.up.isDown || this.numpad?.upLeft.isDown || this.numpad?.upRight.isDown) {
+      dy -= 1;
+    }
+    if (this.cursors?.down.isDown || this.wasd?.S.isDown || this.numpad?.down.isDown || this.numpad?.downLeft.isDown || this.numpad?.downRight.isDown) {
+      dy += 1;
+    }
+
+    if (dx !== 0 || dy !== 0) {
+      const length = Math.hypot(dx, dy) || 1;
+      const far = 3000;
+      this.player.swimTo(
+        this.player.x + (dx / length) * far,
+        this.player.y + (dy / length) * far
+      );
+      this.keyboardSwimming = true;
+    } else if (this.keyboardSwimming) {
+      // Keys just released: bring George to a glide stop instead of leaving the
+      // last distant target pulling him toward the edge of the world.
+      this.player.swimTo(this.player.x, this.player.y);
+      this.keyboardSwimming = false;
+    }
   }
 
   shutdown(): void {
@@ -106,6 +215,17 @@ export class GameScene extends Phaser.Scene {
       collider.destroy();
     }
     this.colliders = [];
+
+    this.bubbleChainTimer?.remove();
+    this.bubbleChainTimer = undefined;
+    this.bubbleChain = 0;
+
+    this.bubbleBurstEmitter?.destroy();
+    this.bubbleBurstEmitter = undefined;
+    this.hazardSparkEmitter?.destroy();
+    this.hazardSparkEmitter = undefined;
+    this.victoryEmitter?.destroy();
+    this.victoryEmitter = undefined;
 
     this.bubbles?.destroy(true, true);
     this.npcs?.destroy(true, true);
@@ -137,6 +257,45 @@ export class GameScene extends Phaser.Scene {
       .image(level.width / 2, level.height / 2, level.backgroundKey)
       .setDisplaySize(level.width, level.height)
       .setDepth(-1);
+  }
+
+  /**
+   * Builds the two reusable particle emitters once per level.
+   *
+   * These used to be allocated per event — a brand new ParticleEmitter GameObject, and
+   * therefore its own pipeline batch, for *every single bubble pop*, destroyed 250ms
+   * later. On a mid-range phone that is pure GC churn during exactly the moment the
+   * game should feel smoothest. Pooling them means popping a whole level allocates
+   * nothing after create(); `explode()` just recycles dead particles.
+   *
+   * The alive caps below keep the worst case (a fast pop chain plus a hazard bump)
+   * under ~90 live particles.
+   */
+  private buildParticles(): void {
+    this.bubbleBurstEmitter = this.add.particles(0, 0, 'bubble', {
+      speed: { min: 60, max: 160 },
+      angle: { min: 0, max: 360 },
+      scale: { start: 0.5, end: 0 },
+      alpha: { start: 0.8, end: 0 },
+      lifespan: 200,
+      maxAliveParticles: 64,
+      emitting: false,
+    });
+    this.bubbleBurstEmitter.setDepth(this.particleDepth);
+
+    this.hazardSparkEmitter = this.add.particles(0, 0, 'bubble', {
+      speed: { min: 40, max: 100 },
+      angle: { min: 0, max: 360 },
+      scale: { start: 0.3, end: 0 },
+      alpha: { start: 0.7, end: 0 },
+      lifespan: 180,
+      // Pale blue, not the old near-black 0x220000. Dark red specks read as soot and
+      // damage; the drain is meant to be funny, not threatening.
+      tint: 0xbfe9ff,
+      maxAliveParticles: 24,
+      emitting: false,
+    });
+    this.hazardSparkEmitter.setDepth(this.particleDepth);
   }
 
   private buildWalls(level: (typeof levels)[number]): void {
@@ -263,8 +422,8 @@ export class GameScene extends Phaser.Scene {
       .zone(
         this.scale.width - this.pauseButtonSize / 2 - 12,
         this.pauseButtonSize / 2 + 12,
-        this.pauseButtonSize + 32,
-        this.pauseButtonSize + 32
+        this.pauseButtonSize + 38,
+        this.pauseButtonSize + 38
       )
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true })
@@ -336,8 +495,8 @@ export class GameScene extends Phaser.Scene {
   }
 
   private handleNpcOverlap(
-    _player: Phaser.GameObjects.GameObject,
-    npcGo: Phaser.GameObjects.GameObject
+    _player: ArcadeCollisionObject,
+    npcGo: ArcadeCollisionObject
   ): void {
     if (this.overlayActive || this.levelCompleteTriggered) {
       return;
@@ -363,6 +522,8 @@ export class GameScene extends Phaser.Scene {
     if (this.overlayActive || this.levelCompleteTriggered || !this.npcs || !this.player) {
       return;
     }
+
+    this.handleKeyboardControls();
 
     for (const child of this.npcs.getChildren()) {
       const npc = child as NPC;
@@ -399,8 +560,8 @@ export class GameScene extends Phaser.Scene {
   }
 
   private async handleBubbleOverlap(
-    _player: Phaser.GameObjects.GameObject,
-    bubbleGo: Phaser.GameObjects.GameObject
+    _player: ArcadeCollisionObject,
+    bubbleGo: ArcadeCollisionObject
   ): Promise<void> {
     if (this.overlayActive || this.levelCompleteTriggered) {
       return;
@@ -413,22 +574,49 @@ export class GameScene extends Phaser.Scene {
 
     bubble.setData('popping', true);
 
+    // Sound FIRST, before anything that can wait. The blip used to be played after
+    // `await bubble.pop()`, i.e. 180ms after the touch that caused it — well past the
+    // ~50ms window where the ear still hears sound and event as one thing, so the pop
+    // felt disconnected from the tap. Firing it here is the whole fix.
+    this.soundManager.playBubbleBlip(this.advanceBubbleChain());
+
     // Prevent repeated collection while the pop animation plays.
     this.bubbles.remove(bubble, false, false);
     this.spawnBubbleBurst(bubble.x, bubble.y);
     this.updateBubbleCountUi();
 
     await bubble.pop();
-    this.soundManager.playBubbleBlip();
 
     if (this.bubbles.countActive(true) === 0) {
       this.completeLevel();
     }
   }
 
+  /**
+   * Returns the chain index for the pop happening right now and arms the reset.
+   *
+   * Each pop steps one note up the pentatonic chime, so a run of bubbles rises and the
+   * ear starts asking for the next one. After `bubbleChainResetDelay` with no pop the
+   * counter goes back to 0 — silently, with nothing on screen. The scene clock is used
+   * on purpose: reading a dialogue or opening the pause menu freezes it, so a chain is
+   * never lost to something that isn't playing.
+   */
+  private advanceBubbleChain(): number {
+    const chainIndex = this.bubbleChain;
+    this.bubbleChain += 1;
+
+    this.bubbleChainTimer?.remove();
+    this.bubbleChainTimer = this.time.delayedCall(this.bubbleChainResetDelay, () => {
+      this.bubbleChain = 0;
+      this.bubbleChainTimer = undefined;
+    });
+
+    return chainIndex;
+  }
+
   private handleHazardCollision(
-    _player: Phaser.GameObjects.GameObject,
-    hazardGo: Phaser.GameObjects.GameObject
+    _player: ArcadeCollisionObject,
+    hazardGo: ArcadeCollisionObject
   ): void {
     if (this.hazardCooldown || this.overlayActive || this.levelCompleteTriggered) {
       return;
@@ -457,7 +645,12 @@ export class GameScene extends Phaser.Scene {
     this.player.swimTo(this.player.x + pushX, this.player.y + pushY);
     body.setVelocity((dx / distance) * 260, (dy / distance) * 260);
 
-    this.cameras.main.flash(100, 255, 60, 60);
+    // A cool pale-blue puff, NOT the old red flash. Red is universal damage language
+    // and it flatly contradicts the promise that nobody can lose this game — it was the
+    // loudest feedback in the whole build, attached to something that costs you nothing.
+    // The bump is a splash and a grumble, so it looks like one. The push, the cranky
+    // tint and the recovery are all unchanged; only the framing is.
+    this.cameras.main.flash(60, 191, 233, 255);
     this.spawnHazardSparks(hazard.x, hazard.y);
 
     this.player.setCranky(true);
@@ -552,38 +745,11 @@ export class GameScene extends Phaser.Scene {
   }
 
   private spawnBubbleBurst(x: number, y: number): void {
-    const emitter = this.add.particles(0, 0, 'bubble', {
-      x,
-      y,
-      speed: { min: 60, max: 160 },
-      angle: { min: 0, max: 360 },
-      scale: { start: 0.5, end: 0 },
-      alpha: { start: 0.8, end: 0 },
-      lifespan: 200,
-      quantity: 8,
-      emitting: false,
-    });
-
-    emitter.explode(8, x, y);
-    this.time.delayedCall(250, () => emitter.destroy());
+    this.bubbleBurstEmitter?.explode(8, x, y);
   }
 
   private spawnHazardSparks(x: number, y: number): void {
-    const emitter = this.add.particles(0, 0, 'bubble', {
-      x,
-      y,
-      speed: { min: 40, max: 100 },
-      angle: { min: 0, max: 360 },
-      scale: { start: 0.3, end: 0 },
-      alpha: { start: 0.7, end: 0 },
-      lifespan: 180,
-      quantity: 6,
-      tint: 0x220000,
-      emitting: false,
-    });
-
-    emitter.explode(6, x, y);
-    this.time.delayedCall(230, () => emitter.destroy());
+    this.hazardSparkEmitter?.explode(6, x, y);
   }
 
   private spawnVictoryFlourish(): void {
@@ -606,6 +772,16 @@ export class GameScene extends Phaser.Scene {
     });
 
     emitter.setScrollFactor(0);
-    this.time.delayedCall(900, () => emitter.destroy());
+    emitter.setDepth(this.particleDepth);
+    // Held on the scene so shutdown() can reclaim it: if the scene tears down
+    // inside this 900ms window the delayedCall never fires and the emitter
+    // outlives the scene that owns it.
+    this.victoryEmitter = emitter;
+    this.time.delayedCall(900, () => {
+      emitter.destroy();
+      if (this.victoryEmitter === emitter) {
+        this.victoryEmitter = undefined;
+      }
+    });
   }
 }

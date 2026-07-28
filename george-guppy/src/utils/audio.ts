@@ -1,3 +1,9 @@
+// Phaser is used at RUNTIME here (instanceof / class extends), not just as a
+// type. Without this import it resolved only via a window.Phaser global that the
+// classic-script vendor build happens to set — so the ESM/importmap build threw
+// "Phaser is not defined".
+import Phaser from 'phaser';
+
 function getAudioContext(scene: Phaser.Scene): AudioContext | undefined {
   const manager = scene.sound;
   if (!(manager instanceof Phaser.Sound.WebAudioSoundManager)) {
@@ -91,33 +97,88 @@ export function isWaterAmbiencePlaying(): boolean {
 }
 
 /**
- * Plays a short happy blip when a bubble is collected.
- * Call from a scene's `create()` method (or from a collision handler) after user interaction has
- * unlocked the audio context.
+ * Semitone offsets of a major pentatonic scale, spanning two octaves.
+ *
+ * A pentatonic scale has no semitone clashes, so *any* subset of these notes sounds
+ * consonant in *any* order. That is what lets the pop chime keep climbing for as long
+ * as a child keeps popping without ever hitting a sour note — the last entry simply
+ * repeats once the chain runs past the top of the table.
  */
-export function playBubbleBlip(scene: Phaser.Scene): void {
+const PENTATONIC_STEPS = [0, 2, 4, 7, 9, 12, 14, 16, 19, 21, 24];
+
+/** Root pitch of the chime chain, in Hz (E5-ish; bright but not shrill). */
+const BUBBLE_ROOT_HZ = 660;
+
+/** From this chain length on, a fifth above is layered in so the chime thickens as it rises. */
+const BUBBLE_HARMONY_CHAIN = 4;
+
+/** Peak gain of the leading chime voice. */
+const BUBBLE_PEAK_GAIN = 0.2;
+
+/** How long one blip voice occupies the mix, in ms. Exported so SoundManager can cap voices. */
+export const BUBBLE_BLIP_MS = 150;
+
+/**
+ * One chime voice: a sine that blips up a fifth over 50ms, the same gesture the
+ * original 880 -> 1320 blip had, transposed onto an arbitrary root.
+ */
+function playChimeVoice(
+  ctx: AudioContext,
+  frequency: number,
+  peakGain: number,
+  startTime: number
+): void {
+  const oscillator = ctx.createOscillator();
+  oscillator.type = 'sine';
+  oscillator.frequency.setValueAtTime(frequency, startTime);
+  oscillator.frequency.exponentialRampToValueAtTime(frequency * 1.5, startTime + 0.05);
+
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.0001, startTime);
+  gain.gain.exponentialRampToValueAtTime(peakGain, startTime + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.0001, startTime + BUBBLE_BLIP_MS / 1000);
+
+  oscillator.connect(gain).connect(ctx.destination);
+  oscillator.start(startTime);
+  oscillator.stop(startTime + BUBBLE_BLIP_MS / 1000);
+}
+
+/**
+ * Plays the happy blip for a collected bubble, pitched by how many bubbles have been
+ * popped in a row: consecutive pops walk *up* the pentatonic table, so the ear starts
+ * wanting the next note. `chainIndex` 0 is the root; the caller owns the counter and
+ * simply stops passing higher numbers once its chain has timed out.
+ *
+ * Call from a collision handler after user interaction has unlocked the audio context.
+ */
+export function playBubbleBlip(scene: Phaser.Scene, chainIndex = 0): void {
   const ctx = getAudioContext(scene);
   if (!ctx) {
     return;
   }
 
-  const oscillator = ctx.createOscillator();
-  oscillator.type = 'sine';
-  oscillator.frequency.setValueAtTime(880, ctx.currentTime);
-  oscillator.frequency.exponentialRampToValueAtTime(1320, ctx.currentTime + 0.05);
+  const step =
+    PENTATONIC_STEPS[
+      Math.min(Math.max(Math.floor(chainIndex) || 0, 0), PENTATONIC_STEPS.length - 1)
+    ] ?? 0;
+  const frequency = BUBBLE_ROOT_HZ * Math.pow(2, step / 12);
+  const startTime = ctx.currentTime;
 
-  const gain = ctx.createGain();
-  gain.gain.setValueAtTime(0.0001, ctx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + 0.01);
-  gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.15);
+  playChimeVoice(ctx, frequency, BUBBLE_PEAK_GAIN, startTime);
 
-  oscillator.connect(gain).connect(ctx.destination);
-  oscillator.start();
-  oscillator.stop(ctx.currentTime + 0.15);
+  // Deep into a chain the chime gets a fifth stacked on top, so a long run grows
+  // richer as well as higher instead of just turning into a thin whistle.
+  if (chainIndex >= BUBBLE_HARMONY_CHAIN) {
+    playChimeVoice(ctx, frequency * 1.5, BUBBLE_PEAK_GAIN * 0.4, startTime);
+  }
 }
 
 /**
- * Plays a short dissonant twang when George hits a hazard.
+ * Plays George's grumbly "harrumph" when he bumps a hazard.
+ *
+ * This is deliberately comic, not punishing: nobody can lose this game, so the drain
+ * gets a two-step descending mutter on a soft triangle wave with a slow tremolo
+ * wobble, rather than the harsh sawtooth twang it used to have (which read as damage).
  * Returns immediately if Web Audio is unavailable.
  */
 export function playCrankSound(scene: Phaser.Scene): void {
@@ -126,17 +187,38 @@ export function playCrankSound(scene: Phaser.Scene): void {
     return;
   }
 
+  const now = ctx.currentTime;
+  const duration = 0.34;
+
+  // "har-RUMPH": two downward steps rather than one alarm-like drop.
   const oscillator = ctx.createOscillator();
-  oscillator.type = 'sawtooth';
-  oscillator.frequency.setValueAtTime(360, ctx.currentTime);
-  oscillator.frequency.exponentialRampToValueAtTime(120, ctx.currentTime + 0.18);
+  oscillator.type = 'triangle';
+  oscillator.frequency.setValueAtTime(300, now);
+  oscillator.frequency.exponentialRampToValueAtTime(210, now + 0.09);
+  oscillator.frequency.exponentialRampToValueAtTime(96, now + duration);
+
+  // The grumble is a slow tremolo on the amplitude. Wobbling the volume keeps it
+  // cartoonish; adding a second dissonant tone instead would just sound like a buzzer.
+  const tremolo = ctx.createGain();
+  tremolo.gain.setValueAtTime(1, now);
+
+  const wobble = ctx.createOscillator();
+  wobble.type = 'sine';
+  wobble.frequency.setValueAtTime(16, now);
+
+  const wobbleDepth = ctx.createGain();
+  wobbleDepth.gain.setValueAtTime(0.45, now);
+
+  wobble.connect(wobbleDepth).connect(tremolo.gain);
 
   const gain = ctx.createGain();
-  gain.gain.setValueAtTime(0.0001, ctx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.25, ctx.currentTime + 0.01);
-  gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.25);
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(0.18, now + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
 
-  oscillator.connect(gain).connect(ctx.destination);
-  oscillator.start();
-  oscillator.stop(ctx.currentTime + 0.25);
+  oscillator.connect(tremolo).connect(gain).connect(ctx.destination);
+  oscillator.start(now);
+  oscillator.stop(now + duration);
+  wobble.start(now);
+  wobble.stop(now + duration);
 }

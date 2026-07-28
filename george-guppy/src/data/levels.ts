@@ -39,7 +39,7 @@ export const levels: LevelConfig[] = [
   },
   {
     id: 1,
-    name: 'Rain Barrel',
+    name: 'Bog',
     backgroundKey: 'bg_rain_barrel',
     width: 800,
     height: 600,

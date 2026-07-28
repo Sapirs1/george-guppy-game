@@ -1,4 +1,16 @@
-import { createWaterAmbience, playBubbleBlip, playCrankSound, stopWaterAmbience } from './audio.js';
+// Phaser is used at RUNTIME here (instanceof / class extends), not just as a
+// type. Without this import it resolved only via a window.Phaser global that the
+// classic-script vendor build happens to set — so the ESM/importmap build threw
+// "Phaser is not defined".
+import Phaser from 'phaser';
+
+import {
+  BUBBLE_BLIP_MS,
+  createWaterAmbience,
+  playBubbleBlip,
+  playCrankSound,
+  stopWaterAmbience,
+} from './audio.js';
 import { musicEnabled, sfxEnabled } from '../scenes/SettingsOverlay.js';
 
 /**
@@ -11,7 +23,22 @@ import { musicEnabled, sfxEnabled } from '../scenes/SettingsOverlay.js';
 
 export class SoundManager {
   private scene: Phaser.Scene;
-  private bubblePending = false;
+
+  /**
+   * Wall-clock expiry of every blip voice still sounding.
+   *
+   * This replaces a 50ms boolean gate that silently *dropped* any blip arriving inside
+   * the window. That gate ate whole runs of the rising chime chain whenever two bubbles
+   * popped together, which is exactly when the chain is most rewarding. A voice cap lets
+   * simultaneous pops layer, and only declines once the mix would genuinely turn to mush.
+   *
+   * Timestamps come from `Date.now()` rather than the scene clock on purpose: a dialogue
+   * or the pause menu freezes `scene.time`, which would strand voices and mute the game.
+   */
+  private bubbleVoices: number[] = [];
+
+  /** Maximum blip voices allowed to overlap. */
+  private readonly maxBubbleVoices = 6;
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
@@ -56,26 +83,27 @@ export class SoundManager {
   }
 
   /**
-   * Plays the bubble collect blip.
+   * Plays the bubble collect blip, pitched by `chainIndex` — the number of bubbles
+   * popped in a row so far, which the calling scene owns. Consecutive pops climb a
+   * pentatonic scale; passing 0 starts again at the root.
    */
-  playBubbleBlip(): void {
+  playBubbleBlip(chainIndex = 0): void {
     if (!sfxEnabled) {
       return;
     }
 
-    // Avoid overlapping blips if the user collects several bubbles instantly.
-    if (this.bubblePending) {
+    const now = Date.now();
+    this.bubbleVoices = this.bubbleVoices.filter((expiresAt) => expiresAt > now);
+    if (this.bubbleVoices.length >= this.maxBubbleVoices) {
       return;
     }
-    this.bubblePending = true;
-    this.scene.time.delayedCall(50, () => {
-      this.bubblePending = false;
-    });
-    playBubbleBlip(this.scene);
+    this.bubbleVoices.push(now + BUBBLE_BLIP_MS);
+
+    playBubbleBlip(this.scene, chainIndex);
   }
 
   /**
-   * Plays the dissonant hazard/crank sound.
+   * Plays George's comic "harrumph" when he bumps a hazard.
    */
   playCrank(): void {
     if (!sfxEnabled) {

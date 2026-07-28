@@ -4,14 +4,35 @@ import { levels } from '../data/levels.js';
 /**
  * LevelCompleteOverlay
  *
- * Shown when a level is finished. Displays a circular/confetti-like burst,
- * the level name, number of bubbles collected, and a large "Next Level" CTA
- * (or "Home" for the final level). Styled after mobile reward popups with
- * a bright card and chunky button.
+ * Shown when a level is finished. Displays a bubble burst, the level name, the
+ * bubbles collected, and a large primary CTA ("Next Level", or "Read Book 1" on
+ * the finale with Home just below).
+ *
+ * This is the one screen that uses the LIGHT surface (`cloud`): the whole game
+ * is dark underwater, so a bright card is the reward moment and needs no other
+ * signal to feel like one.
  *
  * GameScene launches it with:
  *   this.scene.launch('LevelCompleteOverlay', { levelIndex, bubblesCollected, totalBubbles });
  */
+
+const FONT = "Nunito, system-ui, -apple-system, 'Segoe UI', sans-serif";
+
+const C = {
+  abyss: 0x04121f,
+  cloud: 0xf4f7fa,
+  ink: 0x102a40,
+  sun: 0xffd166,
+  kelp: 0x00b89c,
+  tide: 0x0a96e6,
+} as const;
+
+const HEX = {
+  ink: '#102a40',
+  // Muted slate for secondary copy on the light card: 7.33:1 on `cloud`, so it
+  // reads as quieter without dropping anywhere near the AA floor.
+  slate: '#33556e',
+} as const;
 
 interface LevelCompleteData {
   levelIndex?: number;
@@ -53,14 +74,14 @@ export class LevelCompleteOverlay extends Phaser.Scene {
 
     // Darkened full-screen backdrop.
     this.overlay = this.add.graphics();
-    this.overlay.fillStyle(0x000000, 0.5);
+    this.overlay.fillStyle(C.abyss, 0.62);
     this.overlay.fillRect(0, 0, width, height);
     this.overlay.setScrollFactor(0).setDepth(1000);
 
     const cardWidth = Math.min(420, width * 0.85);
     // The finale card carries a second button (the book prompt), so it needs
     // the extra height.
-    const cardHeight = isLastLevel ? 440 : 360;
+    const cardHeight = isLastLevel ? 460 : 360;
     const cardX = (width - cardWidth) / 2;
     const cardY = (height - cardHeight) / 2;
 
@@ -72,11 +93,12 @@ export class LevelCompleteOverlay extends Phaser.Scene {
 
     this.add
       .text(centerX, cardY + 44, isLastLevel ? 'You got George home!' : 'Level Complete!', {
-        fontSize: isLastLevel ? '30px' : '40px',
-        color: '#ffe600',
+        fontFamily: FONT,
+        fontSize: isLastLevel ? '32px' : '40px',
+        color: HEX.ink,
         fontStyle: 'bold',
-        stroke: '#0b1d2e',
-        strokeThickness: 6,
+        // No stroke: on a light card there is nothing to separate the type from,
+        // and an outline would only thicken the letterforms.
       })
       .setOrigin(0.5)
       .setScrollFactor(0)
@@ -84,34 +106,31 @@ export class LevelCompleteOverlay extends Phaser.Scene {
 
     this.add
       .text(centerX, cardY + 94, levelName, {
-        fontSize: '24px',
-        color: '#ffffff',
+        fontFamily: FONT,
+        fontSize: '26px',
+        color: HEX.slate,
         fontStyle: 'bold',
       })
       .setOrigin(0.5)
       .setScrollFactor(0)
       .setDepth(1002);
 
-    // Bubble collection stat with a little icon circle.
+    // Bubble collection stat with a little icon. Drawn, not a `●` glyph — the
+    // dot codepoint is a different weight in every system font.
     const statY = cardY + 156;
     const bubbleIcon = this.add.graphics();
-    bubbleIcon.fillStyle(0x62c4f5, 1);
+    bubbleIcon.fillStyle(C.tide, 1);
     bubbleIcon.fillCircle(centerX - 90, statY, 18);
+    bubbleIcon.fillStyle(0xffffff, 0.75);
+    bubbleIcon.fillCircle(centerX - 96, statY - 6, 5);
     bubbleIcon.setScrollFactor(0).setDepth(1002);
 
     this.add
-      .text(centerX - 90, statY - 1, '●', {
-        fontSize: '18px',
-        color: '#ffffff',
-      })
-      .setOrigin(0.5)
-      .setScrollFactor(0)
-      .setDepth(1003);
-
-    this.add
       .text(centerX - 50, statY, `Bubbles: ${this.bubblesCollected} / ${this.totalBubbles}`, {
-        fontSize: '22px',
-        color: '#d0efff',
+        fontFamily: FONT,
+        fontSize: '24px',
+        color: HEX.ink,
+        fontStyle: 'bold',
       })
       .setOrigin(0, 0.5)
       .setScrollFactor(0)
@@ -120,11 +139,11 @@ export class LevelCompleteOverlay extends Phaser.Scene {
     // Confetti / bubble burst behind the button.
     this.spawnBurst(centerX, cardY + 240);
 
-    // Big CTA.
+    // Big CTA. Geometry is unchanged from the pass that sized these tap targets:
+    // the drawn button is 240x64 and the hit zone is 264x94.
     const buttonWidth = 240;
     const buttonHeight = 64;
     const buttonY = cardY + 264;
-    const buttonColor = isLastLevel ? 0xffb300 : 0x2ecc71;
     const buttonLabel = isLastLevel ? 'Read Book 1' : 'Next Level';
 
     // On the finale, point children (and the grown-up next to them) at the book
@@ -132,8 +151,9 @@ export class LevelCompleteOverlay extends Phaser.Scene {
     if (isLastLevel) {
       this.add
         .text(centerX, cardY + 206, 'George is even crankier in print.', {
-          fontSize: '18px',
-          color: '#d0efff',
+          fontFamily: FONT,
+          fontSize: '24px',
+          color: HEX.slate,
           align: 'center',
         })
         .setOrigin(0.5)
@@ -141,31 +161,40 @@ export class LevelCompleteOverlay extends Phaser.Scene {
         .setDepth(1002);
     }
 
-    const ctaBg = this.add.graphics();
-    ctaBg.fillStyle(buttonColor, 1);
-    ctaBg.fillRoundedRect(centerX - buttonWidth / 2, buttonY, buttonWidth, buttonHeight, 20);
-    ctaBg.lineStyle(4, 0xffffff, 0.5);
-    ctaBg.strokeRoundedRect(centerX - buttonWidth / 2, buttonY, buttonWidth, buttonHeight, 20);
-    ctaBg.setScrollFactor(0).setDepth(1002);
+    // Primary: `sun` fill with `ink` text is 10.20:1. The old white-on-#2ECC71
+    // was 2.10:1 and the finale's white-on-amber was worse still.
+    const cta = this.makeButton(
+      centerX,
+      buttonY + buttonHeight / 2,
+      buttonWidth,
+      buttonHeight,
+      buttonLabel,
+      30,
+      C.sun,
+      HEX.ink
+    );
 
-    const ctaText = this.add
-      .text(centerX, buttonY + buttonHeight / 2, buttonLabel, {
-        fontSize: '30px',
-        color: '#ffffff',
-        fontStyle: 'bold',
-      })
-      .setOrigin(0.5)
-      .setScrollFactor(0)
-      .setDepth(1003);
+    // Idle breathe on the primary CTA only, so the eye lands there first.
+    this.tweens.add({
+      targets: cta.breathe,
+      scale: 1.035,
+      duration: 1900,
+      ease: 'Sine.easeInOut',
+      yoyo: true,
+      repeat: -1,
+    });
 
+    // Hit area larger than the drawn button: at the ~0.49 scale a phone gets,
+    // a 64px button is only ~31 CSS px, well under the 44px minimum.
     const zone = this.add
-      .zone(centerX, buttonY + buttonHeight / 2, buttonWidth, buttonHeight)
+      .zone(centerX, buttonY + buttonHeight / 2, buttonWidth + 24, 94)
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true })
       .setScrollFactor(0)
       .setDepth(1004);
 
     zone.on('pointerdown', () => {
+      this.pressIn(cta.press);
       if (isLastLevel) {
         // Deliberately does NOT tear the game down — the child keeps their
         // finished game behind the new tab.
@@ -177,11 +206,12 @@ export class LevelCompleteOverlay extends Phaser.Scene {
       this.scene.start('GameScene', { levelIndex: this.levelIndex + 1 });
     });
 
-    zone.on('pointerover', () => ctaText.setScale(1.05));
-    zone.on('pointerout', () => ctaText.setScale(1));
+    zone.on('pointerover', () => this.hoverTo(cta.press, 1.05));
+    zone.on('pointerout', () => this.hoverTo(cta.press, 1));
 
     if (isLastLevel) {
-      this.buildHomeButton(centerX, buttonY + 82);
+      // +104 rather than +82 so the two enlarged hit zones cannot overlap.
+      this.buildHomeButton(centerX, buttonY + 104);
     }
   }
 
@@ -203,51 +233,132 @@ export class LevelCompleteOverlay extends Phaser.Scene {
     const w = 200;
     const h = 52;
 
-    const bg = this.add.graphics();
-    bg.fillStyle(0x3498db, 1);
-    bg.fillRoundedRect(centerX - w / 2, y, w, h, 18);
-    bg.lineStyle(3, 0xffffff, 0.45);
-    bg.strokeRoundedRect(centerX - w / 2, y, w, h, 18);
-    bg.setScrollFactor(0).setDepth(1002);
-
-    const label = this.add
-      .text(centerX, y + h / 2, 'Home', {
-        fontSize: '26px',
-        color: '#ffffff',
-        fontStyle: 'bold',
-      })
-      .setOrigin(0.5)
-      .setScrollFactor(0)
-      .setDepth(1003);
+    // Secondary: `tide` fill with `ink` text is 4.57:1 (AA for body, not just
+    // large type), and it stays visually quieter than the sun primary above.
+    const home = this.makeButton(centerX, y + h / 2, w, h, 'Home', 26, C.tide, HEX.ink);
 
     const zone = this.add
-      .zone(centerX, y + h / 2, w, h)
+      .zone(centerX, y + h / 2, w + 24, 94)
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true })
       .setScrollFactor(0)
       .setDepth(1004);
 
     zone.on('pointerdown', () => {
+      this.pressIn(home.press);
       this.scene.stop('GameScene');
       this.scene.stop();
       this.scene.start('Menu');
     });
 
-    zone.on('pointerover', () => label.setScale(1.05));
-    zone.on('pointerout', () => label.setScale(1));
+    zone.on('pointerover', () => this.hoverTo(home.press, 1.05));
+    zone.on('pointerout', () => this.hoverTo(home.press, 1));
+  }
+
+  /**
+   * Button visuals live in nested containers: the outer one carries the idle
+   * breathe, the inner one the hover/press. The hit Zone is a separate object
+   * that is never scaled, so the tap target can never shrink under animation.
+   */
+  private makeButton(
+    cx: number,
+    cy: number,
+    w: number,
+    h: number,
+    label: string,
+    fontPx: number,
+    fill: number,
+    textHex: string
+  ): { breathe: Phaser.GameObjects.Container; press: Phaser.GameObjects.Container } {
+    const breathe = this.add.container(cx, cy);
+    breathe.setScrollFactor(0).setDepth(1002);
+    const press = this.add.container(0, 0);
+    breathe.add(press);
+
+    const g = this.add.graphics();
+    this.softShadow(g, -w / 2, -h / 2, w, h, 22);
+    g.fillStyle(fill, 1);
+    g.fillRoundedRect(-w / 2, -h / 2, w, h, 22);
+    // A solid ink edge: `sun` on `cloud` is only 1.34:1, so without it the
+    // button would have no discernible boundary on the light card (WCAG 1.4.11).
+    // ink-on-cloud is 13.68:1.
+    g.lineStyle(3, C.ink, 1);
+    g.strokeRoundedRect(-w / 2, -h / 2, w, h, 22);
+
+    const text = this.add
+      .text(0, 0, label, {
+        fontFamily: FONT,
+        fontSize: `${fontPx}px`,
+        color: textHex,
+        fontStyle: 'bold',
+      })
+      .setOrigin(0.5);
+
+    press.add(g);
+    press.add(text);
+
+    return { breathe, press };
+  }
+
+  private hoverTo(target: Phaser.GameObjects.Container, scale: number): void {
+    this.tweens.killTweensOf(target);
+    this.tweens.add({ targets: target, scale, duration: 220, ease: 'Back.easeOut' });
+  }
+
+  private pressIn(target: Phaser.GameObjects.Container): void {
+    this.tweens.killTweensOf(target);
+    this.tweens.add({
+      targets: target,
+      scale: 0.93,
+      duration: 90,
+      ease: 'Sine.easeOut',
+      onComplete: () => {
+        this.tweens.add({ targets: target, scale: 1, duration: 260, ease: 'Back.easeOut' });
+      },
+    });
+  }
+
+  /**
+   * Three stacked rounded rects — wider and fainter as they go out — read as one
+   * soft ambient shadow, replacing the old 8px hard offset. Graphics exposes no
+   * blur and postFX is WebGL-only (the config is Phaser.AUTO), so this is the
+   * portable way to get depth.
+   */
+  private softShadow(
+    g: Phaser.GameObjects.Graphics,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    radius: number
+  ): void {
+    const layers = [
+      { spread: 16, alpha: 0.03 },
+      { spread: 9, alpha: 0.06 },
+      { spread: 4, alpha: 0.1 },
+    ];
+    for (const { spread, alpha } of layers) {
+      g.fillStyle(C.abyss, alpha);
+      g.fillRoundedRect(
+        x - spread,
+        y - spread + spread * 0.6,
+        w + spread * 2,
+        h + spread * 2,
+        radius + spread
+      );
+    }
   }
 
   private drawCard(x: number, y: number, w: number, h: number): void {
     this.card.clear();
-    // Drop shadow.
-    this.card.fillStyle(0x000000, 0.25);
-    this.card.fillRoundedRect(x + 8, y + 8, w, h, 28);
-    // Card background.
-    this.card.fillStyle(0x15405c, 0.98);
+    this.softShadow(this.card, x, y, w, h, 28);
+    // A `sun` plate with the `cloud` panel inset on top leaves a warm rim and a
+    // thicker band across the head of the card — the reward framing, without a
+    // single extra asset.
+    this.card.fillStyle(C.sun, 1);
     this.card.fillRoundedRect(x, y, w, h, 28);
-    // Accent border.
-    this.card.lineStyle(5, 0xffe600, 0.9);
-    this.card.strokeRoundedRect(x, y, w, h, 28);
+    this.card.fillStyle(C.cloud, 1);
+    this.card.fillRoundedRect(x + 6, y + 16, w - 12, h - 22, 22);
   }
 
   private spawnBurst(x: number, y: number): void {
@@ -261,9 +372,12 @@ export class LevelCompleteOverlay extends Phaser.Scene {
       lifespan: 500,
       quantity: 18,
       emitting: false,
-      tint: [0x62c4f5, 0xffe600, 0xffffff],
+      // Retinted for the light card: white bubbles were invisible on `cloud`.
+      tint: [C.tide, C.sun, C.kelp],
     });
-    emitter.setScrollFactor(0).setDepth(1000);
+    // Above the card (1001), below the buttons: at the old depth 1000 the burst
+    // rendered *behind* the card it is centred on, so it was never actually seen.
+    emitter.setScrollFactor(0).setDepth(1002);
     emitter.explode(18, x, y);
     this.time.delayedCall(550, () => emitter.destroy());
   }

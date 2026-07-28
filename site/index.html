@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Yechiel's Fishery Farm — Play George the Cranky Guppy</title>
-  <meta name="description" content="Yechiel's Fishery Farm — play George the Cranky Guppy, a free HTML5 underwater adventure game." />
+  <meta name="description" content="Play George the Cranky Guppy — a free browser game from the Yechiel's Fishery Farm children's book series." />
   <link rel="canonical" href="https://www.yechielsfisheryfarm.com/" />
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -19,21 +19,30 @@
   </header>
 
   <main>
+    <!-- Yechiel's Fishery Farm is a STORY WORLD from a series of children's
+         books, not a working fish farm. Never describe it as a real business,
+         and never write about aquaculture, sustainability or fish welfare. -->
     <section class="hero" aria-labelledby="welcome-heading">
-      <h2 id="welcome-heading">Welcome to the Farm</h2>
-      <p>Fresh, sustainable aquaculture and family-friendly activities.</p>
+      <h2 id="welcome-heading">Welcome to the Fishery Farm</h2>
+      <p>Home of George the Cranky Guppy and his very opinionated friends.</p>
     </section>
 
     <section class="content" aria-labelledby="about-heading">
-      <h2 id="about-heading">About the Farm</h2>
-      <p>We raise healthy fish in clean, flowing water and welcome visitors to learn, explore, and play.</p>
+      <h2 id="about-heading">About the books</h2>
+      <p>
+        Funny, dyslexia-friendly chapter books about a guppy who is unhappy about
+        absolutely everything. Start with Book 1, <em>The Water Has Opinions</em>.
+      </p>
     </section>
 
     <section class="game-section" id="game" aria-labelledby="game-heading">
       <h2 id="game-heading">Play George the Cranky Guppy</h2>
       <p class="game-instructions">Tap or click anywhere to swim. Collect bubbles, meet sea creatures, and dodge drains.</p>
 
-      <div class="game-frame" role="img" aria-label="George the Cranky Guppy game">
+      <!-- No role="img" here: it would collapse the iframe out of the
+           accessibility tree and make the game unreachable. The iframe's own
+           title names it. -->
+      <div class="game-frame">
         <iframe
           id="george-guppy-frame"
           src="game/index.html"
@@ -51,7 +60,7 @@
       </div>
 
       <p class="game-meta">
-        <a href="activities.html" class="text-link">More farm activities →</a>
+        <a href="activities.html" class="text-link">More free activities →</a>
       </p>
     </section>
   </main>

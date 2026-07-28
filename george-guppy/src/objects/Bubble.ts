@@ -1,3 +1,9 @@
+// Phaser is used at RUNTIME here (instanceof / class extends), not just as a
+// type. Without this import it resolved only via a window.Phaser global that the
+// classic-script vendor build happens to set — so the ESM/importmap build threw
+// "Phaser is not defined".
+import Phaser from 'phaser';
+
 export class Bubble extends Phaser.Physics.Arcade.Image {
   readonly textKey?: string;
   private bobTween?: Phaser.Tweens.Tween;
@@ -27,10 +33,14 @@ export class Bubble extends Phaser.Physics.Arcade.Image {
         y - this.displayHeight / 2 - 4,
         textKey,
         {
-          fontSize: '12px',
+          // Each world's bubbles spell a short phrase in George's voice, so the
+          // words have to be readable. At 12px they rendered around 5.8 CSS px
+          // on a phone — grey smudges. 26 design px lands at roughly 12.7.
+          fontSize: '26px',
           color: '#ffffff',
+          fontStyle: 'bold',
           stroke: '#0b1d2e',
-          strokeThickness: 3,
+          strokeThickness: 5,
         }
       );
       this.label.setOrigin(0.5, 1);

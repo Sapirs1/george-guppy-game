@@ -16,6 +16,8 @@ export class MissionPanel {
   private checkIcon: Phaser.GameObjects.Text;
   private bg: Phaser.GameObjects.Graphics;
   private completed = false;
+  private retired = false;
+  private retireTimer?: Phaser.Time.TimerEvent;
   private destroyHandlers: (() => void)[] = [];
   private scene: Phaser.Scene;
   private objective: string;
@@ -24,7 +26,9 @@ export class MissionPanel {
   constructor(
     scene: Phaser.Scene,
     objective: string,
-    accentColor = 0xffe600
+    // `sun` — the shared hero accent. The old #ffe600 was a max-chroma primary
+    // and was most of what made the UI read as a 2013 flash game.
+    accentColor = 0xffd166
   ) {
     this.scene = scene;
     this.objective = objective;
@@ -59,6 +63,41 @@ export class MissionPanel {
     const resizeCb = this.updatePositions.bind(this);
     scene.scale.on('resize', resizeCb);
     this.destroyHandlers.push(() => scene.scale.off('resize', resizeCb));
+
+    // Read it, then get out of the way. At a readable size this panel is big
+    // enough to sit in front of the level: on Kitchen Sink it covered the very
+    // sponge the objective tells you to find, and elsewhere it hid a bubble the
+    // child needs to collect. The objective only matters at the start, so it
+    // retires itself; the HUD keeps the bubble count visible regardless.
+    this.retireTimer = scene.time.delayedCall(5500, () => this.retire());
+    this.destroyHandlers.push(() => this.retireTimer?.remove());
+  }
+
+  /** Fade the panel away so it can never obscure gameplay. */
+  private retire(): void {
+    if (this.retired) {
+      return;
+    }
+    this.retired = true;
+    this.scene.tweens.add({
+      targets: this.parts(),
+      alpha: 0,
+      duration: 400,
+      ease: 'Sine.easeIn',
+    });
+  }
+
+  /** Bring it back briefly — used to show the objective ticking off. */
+  private revive(): void {
+    this.retired = false;
+    this.retireTimer?.remove();
+    for (const part of this.parts()) {
+      part.setAlpha(1);
+    }
+  }
+
+  private parts(): [Phaser.GameObjects.Graphics, Phaser.GameObjects.Text, Phaser.GameObjects.Text] {
+    return [this.bg, this.objectiveText, this.checkIcon];
   }
 
   setObjective(value: string): void {
@@ -72,17 +111,22 @@ export class MissionPanel {
       return;
     }
     this.completed = true;
+    // Pop back into view so the child actually sees the objective tick off,
+    // then retire again.
+    this.revive();
     this.objectiveText.setColor('#8aff8a');
     this.checkIcon.setVisible(true);
     this.updatePositions();
 
     this.scene.tweens.add({
-      targets: [this.bg, this.objectiveText, this.checkIcon],
+      targets: this.parts(),
       scaleX: 1.08,
       scaleY: 1.08,
       duration: 120,
       yoyo: true,
     });
+
+    this.retireTimer = this.scene.time.delayedCall(1800, () => this.retire());
   }
 
   destroy(): void {
