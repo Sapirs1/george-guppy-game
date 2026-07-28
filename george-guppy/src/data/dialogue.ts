@@ -44,21 +44,21 @@ export const dialogues: Record<string, DialogueLine[]> = {
       text: "A cold room with a hole in it. Wonderful.",
     },
   ],
-  sponge_wisdom: [
+  molly_wisdom: [
     {
-      speaker: 'Sponge',
-      text: "Shh. I'm soaking. It's a lifestyle.",
+      speaker: 'Molly',
+      text: "Shh. I'm thinking. It's a lifestyle.",
     },
     {
       speaker: 'George',
       text: "Why is it so warm in here? Warm water makes me extra cranky.",
     },
     {
-      speaker: 'Sponge',
+      speaker: 'Molly',
       text: "Warm water holds less air for you to breathe. That's your crankiness, right there.",
     },
     {
-      speaker: 'Sponge',
+      speaker: 'Molly',
       text: "So swim slowly, orange one. A calm fish needs less.",
     },
   ],

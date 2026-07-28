@@ -41,7 +41,7 @@ export class BootScene extends Phaser.Scene {
     this.createGeorgeTexture();
     this.createBubbleTexture();
     this.createNpcSnailTexture();
-    this.createNpcSpongeTexture();
+    this.createNpcMollyTexture();
     this.createNpcFishTexture();
     this.createNpcFrogTexture();
     this.createWallTexture();
@@ -364,27 +364,35 @@ export class BootScene extends Phaser.Scene {
     g.generateTexture('snail', 56, 40);
   }
 
-  private createNpcSpongeTexture(): void {
+  private createNpcMollyTexture(): void {
     const g = this.make.graphics({ x: 0, y: 0 }, false);
 
-    // Artwork offset by (+2, +2) inside a 52x60 frame to make room for the rim.
-    this.rimRoundedRect(g, 2, 2, 48, 56, 8);
+    const tail = [
+      [10, 18],
+      [2, 8],
+      [2, 28],
+    ];
 
-    g.fillStyle(0xffd700);
-    g.fillRoundedRect(2, 2, 48, 56, 8);
+    this.rimPoly(g, tail);
+    this.rimEllipse(g, 25, 18, 34, 20);
+    this.rimCircle(g, 31, 14, 5);
 
-    g.fillStyle(0xbdb76b, 0.75);
-    g.fillCircle(16, 20, 5);
-    g.fillCircle(36, 34, 6);
-    g.fillCircle(22, 44, 4);
-    g.fillCircle(40, 16, 3);
+    g.fillStyle(0x5c6b73);
+    g.fillEllipse(25, 18, 34, 20);
+    this.fillPoly(g, tail, 0x5c6b73);
 
-    g.lineStyle(3, 0xcdb85f);
-    g.strokeRoundedRect(2, 2, 48, 56, 8);
+    g.fillStyle(0xced4da);
+    g.fillEllipse(25, 22, 24, 10);
 
-    g.generateTexture('npc_sponge', 52, 60);
-    // Alias used by level data (kept in sync with npc_sponge art).
-    g.generateTexture('sponge', 52, 60);
+    g.fillStyle(0xffffff);
+    g.fillCircle(31, 14, 5);
+    g.fillStyle(0x111111);
+    g.fillCircle(33, 14, 2);
+
+    g.generateTexture('molly', 50, 38);
+    // Legacy aliases kept for any downstream texture catalogue checks.
+    g.generateTexture('npc_sponge', 50, 38);
+    g.generateTexture('sponge', 50, 38);
   }
 
   private createNpcFishTexture(): void {

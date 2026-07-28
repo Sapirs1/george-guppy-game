@@ -66,7 +66,7 @@ export class MissionPanel {
 
     // Read it, then get out of the way. At a readable size this panel is big
     // enough to sit in front of the level: on Kitchen Sink it covered the very
-    // sponge the objective tells you to find, and elsewhere it hid a bubble the
+    // molly the objective tells you to find, and elsewhere it hid a bubble the
     // child needs to collect. The objective only matters at the start, so it
     // retires itself; the HUD keeps the bubble count visible regardless.
     this.retireTimer = scene.time.delayedCall(5500, () => this.retire());

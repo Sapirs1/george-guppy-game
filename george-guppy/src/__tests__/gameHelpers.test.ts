@@ -113,6 +113,7 @@ const realTextures = [
   'bubble',
   'npc_snail',
   'snail',
+  'molly',
   'npc_sponge',
   'sponge',
   'npc_fish',

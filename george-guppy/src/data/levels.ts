@@ -78,7 +78,7 @@ export const levels: LevelConfig[] = [
     backgroundKey: 'bg_kitchen_sink',
     width: 800,
     height: 600,
-    objective: 'Find the sponge of wisdom',
+    objective: 'Find Molly',
     playerStart: { x: 100, y: 500 },
     walls: [
       { x: 0, y: 0 },
@@ -102,7 +102,7 @@ export const levels: LevelConfig[] = [
       { x: 680, y: 480, text: 'here' },
     ],
     npcs: [
-      { x: 600, y: 100, texture: 'sponge', dialogKey: 'sponge_wisdom' },
+      { x: 600, y: 100, texture: 'molly', dialogKey: 'molly_wisdom' },
     ],
   },
   {
